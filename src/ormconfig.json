@@ -2,10 +2,10 @@
     "type": "mysql",
     "host": "127.0.0.1",
     "port": 3306,
-    "username": "root",
-    "password": "",
+    "username": "trainease",
+    "password": "Pipi2612",
     "database": "coaching",
-    "entities": ["dist/**/entities/*.entity{.ts,.js}"],
+    "entities": ["dist/**/*.entity{.ts,.js}"],
     "synchronize": true,
     "logging": true
   }
