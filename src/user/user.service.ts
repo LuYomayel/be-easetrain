@@ -174,6 +174,7 @@ export class UserService {
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email, password: loginDto.password },
     });
+    console.log('usuario o error', user);
     if (!user) {
       throw new HttpException(
         'User or password incorrect',
