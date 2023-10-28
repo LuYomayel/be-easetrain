@@ -20,7 +20,7 @@ import { ExerciseModule } from './exercise/exercise.module';
       username: 'root',
       password: '',
       database: 'coaching',
-      entities: ['dist/**/entities/*.entity{.ts,.js}'],
+      entities: ['./dist/**/entities/*.entity{.ts,.js}'],
       synchronize: true,
       logging: true,
     }),
