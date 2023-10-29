@@ -79,7 +79,7 @@ export class SubscriptionService {
 
   async createCoachPlan(
     createCoachPlanDTO: CreateCoachPlanDTO,
-  ): Promise<CoachSubscription> {
+  ): Promise<CoachPlan> {
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: createCoachPlanDTO.subscriptionId },
     });
@@ -97,7 +97,7 @@ export class SubscriptionService {
       workoutsPerWeek: createCoachPlanDTO.workoutsPerWeek,
       includeMealPlan: createCoachPlanDTO.includeMealPlan,
     });
-    return await this.coachSubscriptionRepository.save(newCoachSubscription);
+    return await this.coachPlanRepository.save(newCoachSubscription);
   }
 
   async createClientSubscription(
