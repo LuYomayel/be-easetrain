@@ -152,4 +152,17 @@ export class SubscriptionService {
   async remove(id: number): Promise<void> {
     await this.subscriptionRepository.delete(id);
   }
+
+  async findClientsSubscribedToCoach(coachId: number) {
+    const coach = await this.userService.findOne(coachId);
+    if (!coach) {
+      throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+    }
+
+    return await this.clientSubscriptionRepository
+      .createQueryBuilder('clientSubscription')
+      .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
+      .where('coachPlan.coachId = :coachId', { coachId })
+      .getMany();
+  }
 }

@@ -62,4 +62,9 @@ export class SubscriptionController {
   remove(@Param('id') id: string) {
     return this.suscriptionService.remove(+id);
   }
+
+  @Get('coach/:id')
+  findCoachSubscriptions(@Param('id') id: number) {
+    return this.suscriptionService.findClientsSubscribedToCoach(id);
+  }
 }
