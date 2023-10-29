@@ -6,10 +6,23 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Subscription } from '../../subscription/entities/subscription.entity';
-import { Exercise } from 'src/exercise/entities/exercise.entity';
+import { ExerciseInstance } from 'src/exercise/entities/exercise.entity';
 
+export interface IWorkout {
+  id: number;
+  subscription: Subscription;
+  dayOfWeek: string;
+  date?: Date;
+  startTime?: string;
+  endTime?: string;
+  notes?: string;
+  status?: string;
+  exercises: ExerciseInstance[];
+}
+
+// workout.entity.ts
 @Entity()
-export class Workout {
+export class Workout implements IWorkout {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -19,6 +32,24 @@ export class Workout {
   @Column()
   dayOfWeek: string;
 
-  @OneToMany(() => Exercise, (exercise) => exercise.workout)
-  exercises: Exercise[];
+  @Column({ type: 'date', nullable: true })
+  date?: Date;
+
+  @Column({ nullable: true })
+  startTime?: string;
+
+  @Column({ nullable: true })
+  endTime?: string;
+
+  @Column({ nullable: true })
+  notes?: string;
+
+  @Column({ nullable: true })
+  status?: string;
+
+  @OneToMany(
+    () => ExerciseInstance,
+    (exerciseInstance) => exerciseInstance.workout,
+  )
+  exercises: ExerciseInstance[];
 }

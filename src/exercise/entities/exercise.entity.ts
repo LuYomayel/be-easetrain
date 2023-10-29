@@ -1,8 +1,37 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { Workout } from '../../workout/entities/workout.entity';
 
+// exercise.interface.ts
+export interface IExercise {
+  id: number;
+  name: string;
+  description?: string;
+  multimedia?: string;
+  exerciseType?: string;
+  equipmentNeeded?: string;
+}
+
+// exerciseInstance.interface.ts
+export interface IExerciseInstance {
+  id: number;
+  exercise: IExercise;
+  repetitions?: number;
+  sets?: number;
+  time?: number;
+  weight?: number;
+  restInterval?: number;
+  tempo?: string;
+  notes?: string;
+}
+
 @Entity()
-export class Exercise {
+export class Exercise implements IExercise {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -10,50 +39,35 @@ export class Exercise {
   name: string;
 
   @Column({ nullable: true })
-  type: string;
+  description: string;
 
-  @Column({ nullable: true })
-  repetitions: number;
+  @OneToMany(
+    () => ExerciseInstance,
+    (exerciseInstance) => exerciseInstance.exercise,
+  )
+  exerciseInstances: ExerciseInstance[];
+}
 
-  @Column({ nullable: true })
-  sets: number;
+@Entity()
+export class ExerciseInstance implements IExerciseInstance {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ nullable: true })
-  duration: number;
-
-  @Column({ nullable: true })
-  weight: number;
-
-  @Column({ nullable: true })
-  distance: number;
-
-  @Column({ nullable: true })
-  intensity: string;
-
-  @Column({ nullable: true })
-  equipment: string;
-
-  @Column({ nullable: true })
-  difficulty: string;
-
-  @Column({ nullable: true, type: 'text' })
-  instructions: string;
-
-  @Column({ nullable: true })
-  multimedia: string;
-
-  @Column({ nullable: true })
-  rest: number;
-
-  @Column({ nullable: true })
-  order: number;
-
-  @Column({ nullable: true })
-  unitOfMeasure: string;
-
-  @Column({ nullable: true, type: 'text' })
-  notes: string;
+  @ManyToOne(() => Exercise, (exercise) => exercise.exerciseInstances)
+  exercise: Exercise;
 
   @ManyToOne(() => Workout, (workout) => workout.exercises)
   workout: Workout;
+
+  @Column({ nullable: true })
+  repetitions?: number;
+
+  @Column({ nullable: true })
+  sets?: number;
+
+  @Column({ nullable: true })
+  duration?: string;
+
+  @Column({ nullable: true })
+  weight?: number;
 }
