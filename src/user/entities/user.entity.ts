@@ -21,6 +21,8 @@ export interface IUser {
   id: number;
   email: string;
   password: string;
+  name: string;
+  surname: string;
   userType: EUserType;
   coach: Coach;
   client: Client;
@@ -41,6 +43,12 @@ export class User implements IUser {
 
   @Column()
   password: string;
+
+  @Column()
+  name: string;
+
+  @Column()
+  surname: string;
 
   @Column({
     type: 'enum',
