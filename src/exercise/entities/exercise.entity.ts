@@ -18,17 +18,6 @@ export interface IExercise {
 }
 
 // exerciseInstance.interface.ts
-export interface IExerciseInstance {
-  id: number;
-  exercise: IExercise;
-  repetitions?: number;
-  sets?: number;
-  time?: number;
-  weight?: number;
-  restInterval?: number;
-  tempo?: string;
-  notes?: string;
-}
 
 @Entity()
 export class Exercise implements IExercise {
@@ -46,6 +35,31 @@ export class Exercise implements IExercise {
     (exerciseInstance) => exerciseInstance.exercise,
   )
   exerciseInstances: ExerciseInstance[];
+
+  @Column({ nullable: true })
+  multimedia: string;
+
+  @Column({ nullable: true })
+  exerciseType: string;
+
+  @Column({ nullable: true })
+  equipmentNeeded: string;
+
+  @Column({ nullable: true })
+  isDeleted: boolean;
+}
+
+export interface IExerciseInstance {
+  id: number;
+  exercise: IExercise;
+  workout: Workout;
+  repetitions?: number;
+  sets?: number;
+  time?: number;
+  weight?: number;
+  restInterval?: number;
+  tempo?: string;
+  notes?: string;
 }
 
 @Entity()
@@ -66,8 +80,17 @@ export class ExerciseInstance implements IExerciseInstance {
   sets?: number;
 
   @Column({ nullable: true })
-  duration?: string;
+  time?: number;
 
   @Column({ nullable: true })
   weight?: number;
+
+  @Column({ nullable: true })
+  restInterval?: number;
+
+  @Column({ nullable: true })
+  tempo?: string;
+
+  @Column({ nullable: true })
+  notes?: string;
 }
