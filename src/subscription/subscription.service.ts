@@ -162,6 +162,8 @@ export class SubscriptionService {
     return await this.clientSubscriptionRepository
       .createQueryBuilder('clientSubscription')
       .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
+      .leftJoinAndSelect('clientSubscription.client', 'client')
+      .leftJoinAndSelect('clientSubscription.subscription', 'subscription')
       .where('coachPlan.coachId = :coachId', { coachId })
       .getMany();
   }
