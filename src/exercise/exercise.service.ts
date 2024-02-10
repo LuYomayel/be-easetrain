@@ -5,6 +5,7 @@ import { Exercise } from './entities/exercise.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BodyArea } from './entities/body-area.entity';
+import { ExerciseBodyArea } from './entities/exercise-body-area.entity';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -12,9 +13,36 @@ export class ExerciseService {
     private exerciseRepository: Repository<Exercise>,
     @InjectRepository(BodyArea)
     private bodyAreaRepository: Repository<BodyArea>,
+    @InjectRepository(ExerciseBodyArea)
+    private exerciseBodyAreaRepository: Repository<ExerciseBodyArea>,
   ) {}
-  create(createExerciseDto: CreateExerciseDto) {
-    return 'This action adds a new exercise';
+  async create(createExerciseDto: CreateExerciseDto) {
+    const { bodyAreas, ...createExercise } = createExerciseDto;
+    const exercise = await this.exerciseRepository.create(createExercise);
+    const createdExercise = await this.exerciseRepository.save(exercise);
+    if (createdExercise && bodyAreas) {
+      // Para cada ID de bodyArea, busca la entidad BodyArea correspondiente,
+      // crea una nueva entidad ExerciseBodyArea, y guárdala.
+      await Promise.all(
+        bodyAreas.map(async (bodyAreaId) => {
+          const bodyArea = await this.bodyAreaRepository.findOneBy({
+            id: bodyAreaId,
+          });
+          if (!bodyArea) {
+            throw new Error(`BodyArea not found with ID ${bodyAreaId}`);
+          }
+
+          const exerciseBodyArea = this.exerciseBodyAreaRepository.create({
+            exercise: createdExercise, // Pasa la instancia de Exercise directamente
+            bodyArea: bodyArea, // Pasa la instancia de BodyArea directamente
+          });
+
+          await this.exerciseBodyAreaRepository.save(exerciseBodyArea);
+        }),
+      );
+    }
+
+    return createdExercise;
   }
 
   findAll() {
