@@ -4,5 +4,5 @@ export class CreateExerciseDto {
   multimedia: string;
   exerciseType: string;
   equipmentNeeded: string;
-  bodyAreas: number[];
+  bodyArea: number[];
 }

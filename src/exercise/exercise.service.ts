@@ -17,14 +17,14 @@ export class ExerciseService {
     private exerciseBodyAreaRepository: Repository<ExerciseBodyArea>,
   ) {}
   async create(createExerciseDto: CreateExerciseDto) {
-    const { bodyAreas, ...createExercise } = createExerciseDto;
+    const { bodyArea, ...createExercise } = createExerciseDto;
     const exercise = await this.exerciseRepository.create(createExercise);
     const createdExercise = await this.exerciseRepository.save(exercise);
-    if (createdExercise && bodyAreas) {
+    if (createdExercise && bodyArea) {
       // Para cada ID de bodyArea, busca la entidad BodyArea correspondiente,
       // crea una nueva entidad ExerciseBodyArea, y guárdala.
       await Promise.all(
-        bodyAreas.map(async (bodyAreaId) => {
+        bodyArea.map(async (bodyAreaId) => {
           const bodyArea = await this.bodyAreaRepository.findOneBy({
             id: bodyAreaId,
           });
