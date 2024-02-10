@@ -7,7 +7,8 @@ import {
   ManyToMany,
 } from 'typeorm';
 import { Workout } from '../../workout/entities/workout.entity';
-import { BodyArea, ExerciseBodyArea, IBodyArea } from './body-area.entity';
+import { BodyArea, IBodyArea } from './body-area.entity';
+import { ExerciseBodyArea } from './exercise-body-area.entity';
 // exercise.interface.ts
 export interface IExercise {
   id: number;

@@ -3,12 +3,10 @@ import {
   Entity,
   ManyToMany,
   PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
   OneToMany,
 } from 'typeorm';
 import { Exercise } from './exercise.entity';
-
+import { ExerciseBodyArea } from './exercise-body-area.entity';
 export interface IBodyArea {
   id: number;
   name: string;
@@ -32,28 +30,4 @@ export class BodyArea implements IBodyArea {
     (exerciseBodyArea) => exerciseBodyArea.bodyArea,
   )
   exerciseBodyAreas: ExerciseBodyArea;
-}
-
-export interface IExerciseBodyArea {
-  id: number;
-  exercise: Exercise;
-  bodyArea: BodyArea;
-}
-
-@Entity()
-export class ExerciseBodyArea implements IExerciseBodyArea {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ManyToOne(() => Exercise, (exercise) => exercise.exerciseBodyAreas, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'exerciseId' })
-  exercise: Exercise;
-
-  @ManyToOne(() => BodyArea, (bodyArea) => bodyArea.exerciseBodyAreas, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'bodyAreaId' })
-  bodyArea: BodyArea;
 }
