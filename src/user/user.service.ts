@@ -183,4 +183,21 @@ export class UserService {
     }
     return user;
   }
+
+  async getStudentById(id: number) {
+    const student = await this.clientRepository
+      .createQueryBuilder('client')
+      .leftJoinAndSelect('client.user', 'user')
+      .where('client.id = :id', { id })
+      .getOne();
+
+    if (!student) {
+      throw new HttpException(
+        'User or password incorrect',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return student;
+  }
 }

@@ -4,9 +4,10 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
 import { Workout } from '../../workout/entities/workout.entity';
-
+import { BodyArea, ExerciseBodyArea, IBodyArea } from './body-area.entity';
 // exercise.interface.ts
 export interface IExercise {
   id: number;
@@ -15,6 +16,9 @@ export interface IExercise {
   multimedia?: string;
   exerciseType?: string;
   equipmentNeeded?: string;
+  isDeleted?: boolean;
+  bodyAreas?: IBodyArea[];
+  exerciseBodyAreas?: ExerciseBodyArea;
 }
 
 // exerciseInstance.interface.ts
@@ -47,6 +51,15 @@ export class Exercise implements IExercise {
 
   @Column({ nullable: true })
   isDeleted: boolean;
+
+  @ManyToMany(() => BodyArea, (bodyArea) => bodyArea.exercises)
+  bodyAreas: BodyArea[];
+
+  @OneToMany(
+    () => ExerciseBodyArea,
+    (exerciseBodyArea) => exerciseBodyArea.exercise,
+  )
+  exerciseBodyAreas: ExerciseBodyArea;
 }
 
 export interface IExerciseInstance {
@@ -60,6 +73,7 @@ export interface IExerciseInstance {
   restInterval?: number;
   tempo?: string;
   notes?: string;
+  difuculty?: string;
 }
 
 @Entity()
@@ -93,4 +107,7 @@ export class ExerciseInstance implements IExerciseInstance {
 
   @Column({ nullable: true })
   notes?: string;
+
+  @Column({ nullable: true })
+  difuculty?: string;
 }

@@ -84,4 +84,9 @@ export class UserController {
   async login(@Body() loginDTO: LoginDto) {
     return this.userService.login(loginDTO);
   }
+
+  @Get('coach/student/:id')
+  async getStudentbyId(@Param() id: number) {
+    return this.userService.getStudentById(id);
+  }
 }
