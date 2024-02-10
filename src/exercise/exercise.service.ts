@@ -45,8 +45,8 @@ export class ExerciseService {
     return createdExercise;
   }
 
-  findAll() {
-    return `This action returns all exercise`;
+  async findAll() {
+    return await this.exerciseRepository.find();
   }
 
   findOne(id: number) {
