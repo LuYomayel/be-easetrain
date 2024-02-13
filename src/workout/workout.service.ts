@@ -4,18 +4,58 @@ import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from './entities/workout.entity';
-
+import { DataSource } from 'typeorm';
+import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
+import { ExerciseInstance } from '../exercise/entities/exercise.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
     @InjectRepository(Workout)
     private workoutRepository: Repository<Workout>,
+    private dataSource: DataSource,
+    @InjectRepository(ExerciseGroup)
+    private exerciseGroupRepository: Repository<ExerciseGroup>,
+    @InjectRepository(ExerciseInstance)
+    private exerciseInstanceRepository: Repository<ExerciseInstance>,
   ) {}
-  create(createWorkoutDto: CreateWorkoutDto) {
-    const workout = this.workoutRepository.create(createWorkoutDto);
-    console.log(workout);
-    return workout;
-    return this.workoutRepository.save(workout);
+
+  async create(createWorkoutDto: CreateWorkoutDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const workout = queryRunner.manager.create(Workout, createWorkoutDto);
+      const savedWorkout = await queryRunner.manager.save(workout);
+
+      for (const groupDto of createWorkoutDto.groups) {
+        const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
+          ...groupDto,
+          workout: savedWorkout,
+        });
+        const savedGroup = await queryRunner.manager.save(exerciseGroup);
+
+        for (const exerciseDto of groupDto.exercises) {
+          const exerciseInstance = queryRunner.manager.create(
+            ExerciseInstance,
+            {
+              ...exerciseDto,
+              group: savedGroup,
+            },
+          );
+          await queryRunner.manager.save(exerciseInstance);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return savedWorkout;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   findAll() {
