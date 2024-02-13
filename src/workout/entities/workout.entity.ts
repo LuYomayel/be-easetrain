@@ -6,18 +6,22 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Subscription } from '../../subscription/entities/subscription.entity';
-import { ExerciseInstance } from 'src/exercise/entities/exercise.entity';
+import {
+  IExerciseGroup,
+  ExerciseGroup,
+} from '../../exercise/entities/exercise-group.entity';
 
 export interface IWorkout {
   id: number;
   subscription: Subscription;
+  planName: string;
   dayOfWeek: string;
   date?: Date;
   startTime?: string;
   endTime?: string;
   notes?: string;
   status?: string;
-  exercises: ExerciseInstance[];
+  groups: IExerciseGroup[];
 }
 
 // workout.entity.ts
@@ -31,6 +35,9 @@ export class Workout implements IWorkout {
 
   @Column()
   dayOfWeek: string;
+
+  @Column()
+  planName: string;
 
   @Column({ type: 'date', nullable: true })
   date?: Date;
@@ -47,9 +54,6 @@ export class Workout implements IWorkout {
   @Column({ nullable: true })
   status?: string;
 
-  @OneToMany(
-    () => ExerciseInstance,
-    (exerciseInstance) => exerciseInstance.workout,
-  )
-  exercises: ExerciseInstance[];
+  @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workout)
+  groups: ExerciseGroup[];
 }

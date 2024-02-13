@@ -6,7 +6,7 @@ import {
   OneToMany,
   ManyToMany,
 } from 'typeorm';
-import { Workout } from '../../workout/entities/workout.entity';
+import { IExerciseGroup, ExerciseGroup } from './exercise-group.entity';
 import { BodyArea, IBodyArea } from './body-area.entity';
 import { ExerciseBodyArea } from './exercise-body-area.entity';
 // exercise.interface.ts
@@ -66,7 +66,7 @@ export class Exercise implements IExercise {
 export interface IExerciseInstance {
   id: number;
   exercise: IExercise;
-  workout: Workout;
+  group: IExerciseGroup;
   repetitions?: number;
   sets?: number;
   time?: number;
@@ -75,6 +75,8 @@ export interface IExerciseInstance {
   tempo?: string;
   notes?: string;
   difuculty?: string;
+  duration?: number;
+  distance?: number;
 }
 
 @Entity()
@@ -85,9 +87,6 @@ export class ExerciseInstance implements IExerciseInstance {
   @ManyToOne(() => Exercise, (exercise) => exercise.exerciseInstances)
   exercise: Exercise;
 
-  @ManyToOne(() => Workout, (workout) => workout.exercises)
-  workout: Workout;
-
   @Column({ nullable: true })
   repetitions?: number;
 
@@ -111,4 +110,13 @@ export class ExerciseInstance implements IExerciseInstance {
 
   @Column({ nullable: true })
   difuculty?: string;
+
+  @Column({ nullable: true })
+  duration?: number;
+
+  @Column({ nullable: true })
+  distance?: number;
+
+  @ManyToOne(() => ExerciseGroup, (group) => group.exercises)
+  group: ExerciseGroup;
 }
