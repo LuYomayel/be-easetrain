@@ -33,7 +33,7 @@ export class Workout implements IWorkout {
   @ManyToOne(() => Subscription, (subscription) => subscription.workouts)
   subscription?: Subscription;
 
-  @Column()
+  @Column({ nullable: true })
   dayOfWeek?: string;
 
   @Column()
