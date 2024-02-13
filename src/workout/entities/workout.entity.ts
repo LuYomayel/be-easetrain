@@ -13,9 +13,9 @@ import {
 
 export interface IWorkout {
   id: number;
-  subscription: Subscription;
+  subscription?: Subscription;
   planName: string;
-  dayOfWeek: string;
+  dayOfWeek?: string;
   date?: Date;
   startTime?: string;
   endTime?: string;
@@ -31,10 +31,10 @@ export class Workout implements IWorkout {
   id: number;
 
   @ManyToOne(() => Subscription, (subscription) => subscription.workouts)
-  subscription: Subscription;
+  subscription?: Subscription;
 
   @Column()
-  dayOfWeek: string;
+  dayOfWeek?: string;
 
   @Column()
   planName: string;
