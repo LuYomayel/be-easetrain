@@ -13,7 +13,6 @@ export interface IExerciseGroup {
   id: number;
   workout: Workout;
   exercises: ExerciseInstance[];
-  name: string;
   set: number;
   rest: number;
 }
@@ -31,9 +30,6 @@ export class ExerciseGroup implements IExerciseGroup {
     (exerciseInstance) => exerciseInstance.group,
   )
   exercises: ExerciseInstance[];
-
-  @Column()
-  name: string;
 
   @Column()
   set: number;
