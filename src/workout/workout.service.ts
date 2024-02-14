@@ -68,22 +68,16 @@ export class WorkoutService {
       relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
     });
 
-    // Reestructurar cada workout
-    const formattedWorkouts = workouts.map((workout) => ({
+    return workouts.map((workout) => ({
       ...workout,
       groups: workout.groups.map((group) => ({
         ...group,
         exercises: group.exercises.map((exerciseInstance) => ({
           ...exerciseInstance.exercise,
-          details: {
-            ...exerciseInstance,
-            exercise: undefined, // Eliminar la referencia circular si es necesario
-          },
+          details: { ...exerciseInstance },
         })),
       })),
     }));
-
-    return formattedWorkouts;
   }
 
   findOne(id: number) {
