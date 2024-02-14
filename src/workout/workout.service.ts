@@ -62,12 +62,28 @@ export class WorkoutService {
     return `This action returns all workout`;
   }
 
-  findAllByCoachId(coachId: number) {
-    const workouts = this.workoutRepository.find({
+  async findAllByCoachId(coachId: number): Promise<any> {
+    const workouts = await this.workoutRepository.find({
       where: { coach: { id: coachId } },
       relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
     });
-    return workouts;
+
+    // Reestructurar cada workout
+    const formattedWorkouts = workouts.map((workout) => ({
+      ...workout,
+      groups: workout.groups.map((group) => ({
+        ...group,
+        exercises: group.exercises.map((exerciseInstance) => ({
+          ...exerciseInstance.exercise,
+          details: {
+            ...exerciseInstance,
+            exercise: undefined, // Eliminar la referencia circular si es necesario
+          },
+        })),
+      })),
+    }));
+
+    return formattedWorkouts;
   }
 
   findOne(id: number) {
