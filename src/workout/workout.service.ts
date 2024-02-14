@@ -65,7 +65,7 @@ export class WorkoutService {
   findAllByCoachId(coachId: number) {
     const workouts = this.workoutRepository.find({
       where: { coach: { id: coachId } },
-      relations: ['groups', 'groups.exercises'],
+      relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
     });
     return workouts;
   }

@@ -12,8 +12,18 @@ import { Schedule } from '../../schedule/entities/schedule.entity';
 import { Payment } from '../../payment/entities/payment.entity';
 import { User } from '../../user/entities/user.entity';
 
+export interface ISubscription {
+  id: number;
+  user: User;
+  workouts: Workout[];
+  mealPlans: MealPlan[];
+  schedules: Schedule[];
+  payments: Payment[];
+  isDeleted: boolean;
+}
+
 @Entity()
-export class Subscription {
+export class Subscription implements ISubscription {
   @PrimaryGeneratedColumn()
   id: number;
 
