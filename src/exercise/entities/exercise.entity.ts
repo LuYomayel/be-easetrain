@@ -9,6 +9,8 @@ import {
 import { IExerciseGroup, ExerciseGroup } from './exercise-group.entity';
 import { BodyArea, IBodyArea } from './body-area.entity';
 import { ExerciseBodyArea } from './exercise-body-area.entity';
+import { IWorkout } from '../../workout/entities/workout.entity';
+import { Workout } from '../../workout/entities/workout.entity';
 // exercise.interface.ts
 export interface IExercise {
   id: number;
@@ -77,6 +79,7 @@ export interface IExerciseInstance {
   difuculty?: string;
   duration?: number;
   distance?: number;
+  workout: IWorkout;
 }
 
 @Entity()
@@ -119,4 +122,7 @@ export class ExerciseInstance implements IExerciseInstance {
 
   @ManyToOne(() => ExerciseGroup, (group) => group.exercises)
   group: ExerciseGroup;
+
+  @ManyToOne(() => Workout, (workout) => workout.exercises)
+  workout: Workout;
 }

@@ -42,6 +42,7 @@ export class WorkoutService {
             {
               ...exerciseDto,
               group: savedGroup,
+              workout: savedWorkout,
             },
           );
           await queryRunner.manager.save(exerciseInstance);
