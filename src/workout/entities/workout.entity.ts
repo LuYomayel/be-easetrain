@@ -10,10 +10,12 @@ import {
   IExerciseGroup,
   ExerciseGroup,
 } from '../../exercise/entities/exercise-group.entity';
+import { Coach } from 'src/user/entities/coach.entity';
 
 export interface IWorkout {
   id: number;
   subscription?: Subscription;
+  coach: Coach;
   planName: string;
   dayOfWeek?: string;
   date?: Date;
@@ -32,6 +34,9 @@ export class Workout implements IWorkout {
 
   @ManyToOne(() => Subscription, (subscription) => subscription.workouts)
   subscription?: Subscription;
+
+  @ManyToOne(() => Coach, (coach) => coach.id)
+  coach: Coach;
 
   @Column({ nullable: true })
   dayOfWeek?: string;
