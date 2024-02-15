@@ -5,13 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Workout } from './entities/workout.entity';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { ExerciseInstance } from '../exercise/entities/exercise.entity';
-import { ClientSubscription } from 'src/subscription/entities/client.subscription.entity';
+import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
+import { Subscription } from '../subscription/entities/subscription.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Workout,
       ExerciseGroup,
       ExerciseInstance,
+      Subscription,
       ClientSubscription,
     ]),
   ],
