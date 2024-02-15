@@ -7,6 +7,7 @@ import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { ExerciseInstance } from '../exercise/entities/exercise.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 import { Subscription } from '../subscription/entities/subscription.entity';
+import { User } from '../user/entities/user.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -15,6 +16,7 @@ import { Subscription } from '../subscription/entities/subscription.entity';
       ExerciseInstance,
       Subscription,
       ClientSubscription,
+      User,
     ]),
   ],
   controllers: [WorkoutController],
