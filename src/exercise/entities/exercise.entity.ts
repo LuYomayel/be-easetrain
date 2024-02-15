@@ -74,7 +74,7 @@ export interface IExerciseInstance {
   restInterval?: number;
   tempo?: string;
   notes?: string;
-  difuculty?: string;
+  difficulty?: string;
   duration?: number;
   distance?: number;
 }
@@ -109,7 +109,7 @@ export class ExerciseInstance implements IExerciseInstance {
   notes?: string;
 
   @Column({ nullable: true })
-  difuculty?: string;
+  difficulty?: string;
 
   @Column({ nullable: true })
   duration?: number;
