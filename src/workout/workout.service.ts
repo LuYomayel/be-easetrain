@@ -28,7 +28,6 @@ export class WorkoutService {
     try {
       const workout = queryRunner.manager.create(Workout, createWorkoutDto);
       const savedWorkout = await queryRunner.manager.save(workout);
-
       for (const groupDto of createWorkoutDto.groups) {
         const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
           ...groupDto,

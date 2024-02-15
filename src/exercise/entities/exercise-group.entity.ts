@@ -15,12 +15,16 @@ export interface IExerciseGroup {
   exercises: ExerciseInstance[];
   set: number;
   rest: number;
+  groupNumber: number;
 }
 
 @Entity()
 export class ExerciseGroup implements IExerciseGroup {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  groupNumber: number;
 
   @ManyToOne(() => Workout, (workout) => workout.groups)
   workout: Workout;
