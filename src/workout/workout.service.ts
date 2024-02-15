@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateWorkoutDto } from './dto/create-workout.dto';
+import { AssignWorkoutDto, CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -67,6 +67,17 @@ export class WorkoutService {
 
   findAll() {
     return `This action returns all workout`;
+  }
+
+  async assignWorkout(assignWorkoutDto: AssignWorkoutDto) {
+    const workout = await this.workoutRepository.findOneBy({
+      id: assignWorkoutDto.workoutId,
+    });
+
+    workout.date = new Date();
+    workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
+
+    return this.workoutRepository.save(workout);
   }
 
   async findAllByCoachId(coachId: number): Promise<any> {
