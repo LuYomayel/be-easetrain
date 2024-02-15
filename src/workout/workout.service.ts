@@ -88,26 +88,21 @@ export class WorkoutService {
       workout.date = new Date();
       workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
       console.log('clientId', assignWorkoutDto.clientId);
-      const client = await this.userRepository.findOneBy({
-        id: assignWorkoutDto.clientId,
-      });
-      if (!client) {
-        return new Error('Client not found');
-      }
-      const clientSubscription =
-        await this.clientSubscriptionRepository.findOneBy({
-          client: client.client,
-        });
+
+      const clientSubscription = await this.clientSubscriptionRepository
+        .createQueryBuilder('clientSubscription')
+        .innerJoinAndSelect('clientSubscription.client', 'client')
+        .innerJoinAndSelect('clientSubscription.subscription', 'subscription')
+        .where('client.id = :clientId', { clientId: assignWorkoutDto.clientId })
+        .getOne();
+
       console.log('clientSubscription', clientSubscription);
       if (!clientSubscription) {
         return new Error('Client subscription not found');
       }
-      const subscription = await this.subscriptionRepository.findOneBy({
-        id: clientSubscription.subscription.id,
-      });
 
-      workout.subscription = subscription;
-      console.log('workout', workout);
+      // Ahora que tienes la suscripción, puedes asignarla al workout
+      workout.subscription = clientSubscription.subscription;
       return this.workoutRepository.save(workout);
     } catch (error) {
       return new Error('Error assigning workout');
