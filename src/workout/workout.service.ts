@@ -9,6 +9,7 @@ import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { ExerciseInstance } from '../exercise/entities/exercise.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 import { Subscription } from 'src/subscription/entities/subscription.entity';
+import { User } from 'src/user/entities/user.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -23,6 +24,8 @@ export class WorkoutService {
     private clientSubscriptionRepository: Repository<ClientSubscription>,
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
@@ -85,10 +88,15 @@ export class WorkoutService {
       workout.date = new Date();
       workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
       console.log('clientId', assignWorkoutDto.clientId);
-      // workout.coach.id = assignWorkoutDto.coachId;
+      const client = await this.userRepository.findOneBy({
+        id: assignWorkoutDto.clientId,
+      });
+      if (!client) {
+        return new Error('Client not found');
+      }
       const clientSubscription =
         await this.clientSubscriptionRepository.findOneBy({
-          id: assignWorkoutDto.clientId,
+          client: client.client,
         });
       console.log('clientSubscription', clientSubscription);
       if (!clientSubscription) {
@@ -97,6 +105,7 @@ export class WorkoutService {
       const subscription = await this.subscriptionRepository.findOneBy({
         id: clientSubscription.subscription.id,
       });
+
       workout.subscription = subscription;
       console.log('workout', workout);
       return this.workoutRepository.save(workout);

@@ -22,7 +22,7 @@ import { ExerciseModule } from './exercise/exercise.module';
       database: 'coaching',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
-      logging: false,
+      logging: true,
     }),
     UserModule,
     MealPlanModule,
