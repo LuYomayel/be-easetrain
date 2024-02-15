@@ -42,6 +42,7 @@ export class WorkoutService {
             {
               ...exerciseDto,
               group: savedGroup,
+              exercise: exerciseDto.exercise,
               workout: savedWorkout,
             },
           );
