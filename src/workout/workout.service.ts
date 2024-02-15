@@ -87,7 +87,7 @@ export class WorkoutService {
       throw new Error('Client subscription not found');
     }
     workout.subscription.id = subscriptionId.id;
-
+    console.log('workout', workout);
     return this.workoutRepository.save(workout);
   }
 
