@@ -80,8 +80,8 @@ export class WorkoutService {
     console.log('assignWorkoutDto', assignWorkoutDto);
     workout.date = new Date();
     workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
-    workout.coach.id = assignWorkoutDto.coachId;
     console.log('clientId', assignWorkoutDto.clientId);
+    workout.coach.id = assignWorkoutDto.coachId;
     const subscriptionId = await this.clientSubscriptionRepository.findOneBy({
       id: assignWorkoutDto.clientId,
     });
