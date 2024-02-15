@@ -26,16 +26,23 @@ export class WorkoutService {
     await queryRunner.startTransaction();
 
     try {
+      return createWorkoutDto;
       const workout = queryRunner.manager.create(Workout, createWorkoutDto);
       const savedWorkout = await queryRunner.manager.save(workout);
 
       for (const groupDto of createWorkoutDto.groups) {
         const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
           ...groupDto,
+          exercises: groupDto.exercises.map((exerciseDto) =>
+            queryRunner.manager.create(ExerciseInstance, {
+              ...exerciseDto,
+              exercise: exerciseDto.exercise,
+            }),
+          ),
           workout: savedWorkout,
         });
         const savedGroup = await queryRunner.manager.save(exerciseGroup);
-
+        console.log('savedGroup', savedGroup);
         for (const exerciseDto of groupDto.exercises) {
           const exerciseInstance = queryRunner.manager.create(
             ExerciseInstance,
@@ -43,7 +50,6 @@ export class WorkoutService {
               ...exerciseDto,
               group: savedGroup,
               exercise: exerciseDto.exercise,
-              workout: savedWorkout,
             },
           );
           console.log('exerciseInstance', exerciseInstance);

@@ -11,10 +11,6 @@ import {
   ExerciseGroup,
 } from '../../exercise/entities/exercise-group.entity';
 import { Coach } from 'src/user/entities/coach.entity';
-import {
-  IExerciseInstance,
-  ExerciseInstance,
-} from 'src/exercise/entities/exercise.entity';
 
 export interface IWorkout {
   id: number;
@@ -28,7 +24,6 @@ export interface IWorkout {
   notes?: string;
   status?: string;
   groups: IExerciseGroup[];
-  exercises: IExerciseInstance[];
 }
 
 // workout.entity.ts
@@ -66,10 +61,4 @@ export class Workout implements IWorkout {
 
   @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workout)
   groups: ExerciseGroup[];
-
-  @OneToMany(
-    () => ExerciseInstance,
-    (exerciseInstance) => exerciseInstance.workout,
-  )
-  exercises: ExerciseInstance[];
 }
