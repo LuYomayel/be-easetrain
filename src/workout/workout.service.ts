@@ -68,7 +68,7 @@ export class WorkoutService {
       where: { coach: { id: coachId } },
       relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
     });
-
+    return workouts;
     return workouts.map((workout) => ({
       ...workout,
       groups: workout.groups.map((group) => ({
