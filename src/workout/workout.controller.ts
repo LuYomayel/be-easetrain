@@ -17,6 +17,7 @@ export class WorkoutController {
 
   @Post()
   create(@Body() createWorkoutDto: CreateWorkoutDto) {
+    console.log('createWorkoutDto', createWorkoutDto);
     return {
       createWorkoutDto,
       message: 'This action adds a new workout',
