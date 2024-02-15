@@ -20,13 +20,13 @@ export class WorkoutService {
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
+    return createWorkoutDto;
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      return createWorkoutDto;
       const workout = queryRunner.manager.create(Workout, createWorkoutDto);
       const savedWorkout = await queryRunner.manager.save(workout);
 
