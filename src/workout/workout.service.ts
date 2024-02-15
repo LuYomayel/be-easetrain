@@ -127,7 +127,7 @@ export class WorkoutService {
     }));
   }
 
-  async findAllByClientId(clientId: number): Promise<Workout[]> {
+  async findAllByClientId(clientId: number): Promise<any> {
     try {
       const clientWorkouts = await this.workoutRepository
         .createQueryBuilder('workout')
@@ -138,7 +138,16 @@ export class WorkoutService {
         .where('user.id = :clientId', { clientId })
         // .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
         .getMany();
-
+      return clientWorkouts.map((workout) => ({
+        ...workout,
+        groups: workout.groups.map((group) => ({
+          ...group,
+          exercises: group.exercises.map((exerciseInstance) => ({
+            ...exerciseInstance.exercise,
+            details: { ...exerciseInstance },
+          })),
+        })),
+      }));
       return clientWorkouts;
     } catch (error) {
       console.error('Error fetching workouts by client ID:', error);
