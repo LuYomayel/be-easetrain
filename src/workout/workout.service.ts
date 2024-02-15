@@ -128,6 +128,12 @@ export class WorkoutService {
   }
 
   async findAllBySubscriptionId(clientId: number): Promise<any> {
+    const clientWorkouts = await this.workoutRepository
+      .createQueryBuilder('workout')
+      .innerJoinAndSelect('workout.subscription', 'subscription')
+      .innerJoinAndSelect('subscription.client', 'client')
+      .where('client.id = :clientId', { clientId: clientId })
+      .getMany();
     const subscription = await this.clientSubscriptionRepository.findOneBy({
       id: clientId,
     });
@@ -138,6 +144,10 @@ export class WorkoutService {
       where: { subscription: { id: subscription.id } },
       relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
     });
+    return {
+      workouts,
+      clientWorkouts,
+    };
     return workouts.map((workout) => ({
       ...workout,
       groups: workout.groups.map((group) => ({
