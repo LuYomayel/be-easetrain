@@ -81,12 +81,13 @@ export class WorkoutService {
     workout.date = new Date();
     workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
     workout.coach.id = assignWorkoutDto.coachId;
+    console.log('clientId', assignWorkoutDto.clientId);
     const subscriptionId = await this.clientSubscriptionRepository.findOneBy({
       id: assignWorkoutDto.clientId,
     });
     console.log('subscriptionId', subscriptionId);
     if (!subscriptionId) {
-      throw new Error('Client subscription not found');
+      return new Error('Client subscription not found');
     }
     workout.subscription.id = subscriptionId.id;
     console.log('workout', workout);
