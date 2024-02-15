@@ -7,7 +7,7 @@ import { Workout } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { ExerciseInstance } from '../exercise/entities/exercise.entity';
-import { ClientSubscription } from 'src/subscription/entities/client.subscription.entity';
+import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
