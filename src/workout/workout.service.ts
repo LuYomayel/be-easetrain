@@ -134,7 +134,7 @@ export class WorkoutService {
         .innerJoin('workout.subscription', 'subscription')
         .innerJoin('subscription.user', 'user')
         .where('user.id = :clientId', { clientId })
-        .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
+        // .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
         .getMany();
 
       return clientWorkouts;

@@ -37,7 +37,7 @@ export class WorkoutController {
 
   @Get('/clientId/:clientId')
   findAllByClientId(@Param('clientId') clientId: number) {
-    return this.workoutService.findAllBySubscriptionId(clientId);
+    return this.workoutService.findAllByClientId(clientId);
   }
 
   @Get(':id')
