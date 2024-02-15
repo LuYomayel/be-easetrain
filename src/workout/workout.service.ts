@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { AssignWorkoutDto, CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Workout } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { ExerciseInstance } from '../exercise/entities/exercise.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
+import { Subscription } from 'src/subscription/entities/subscription.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -20,6 +21,8 @@ export class WorkoutService {
     private exerciseInstanceRepository: Repository<ExerciseInstance>,
     @InjectRepository(ClientSubscription)
     private clientSubscriptionRepository: Repository<ClientSubscription>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
@@ -83,14 +86,18 @@ export class WorkoutService {
       workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
       console.log('clientId', assignWorkoutDto.clientId);
       // workout.coach.id = assignWorkoutDto.coachId;
-      const subscriptionId = await this.clientSubscriptionRepository.findOneBy({
-        id: assignWorkoutDto.clientId,
-      });
-      console.log('subscriptionId', subscriptionId);
-      if (!subscriptionId) {
+      const clientSubscription =
+        await this.clientSubscriptionRepository.findOneBy({
+          id: assignWorkoutDto.clientId,
+        });
+      console.log('clientSubscription', clientSubscription);
+      if (!clientSubscription) {
         return new Error('Client subscription not found');
       }
-      workout.subscription.id = subscriptionId.id;
+      const subscription = await this.subscriptionRepository.findOneBy({
+        id: clientSubscription.subscription.id,
+      });
+      workout.subscription = subscription;
       console.log('workout', workout);
       return this.workoutRepository.save(workout);
     } catch (error) {
