@@ -45,6 +45,7 @@ export class WorkoutService {
               workout: savedWorkout,
             },
           );
+          console.log('exerciseInstance', exerciseInstance);
           await queryRunner.manager.save(exerciseInstance);
         }
       }
