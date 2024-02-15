@@ -7,6 +7,7 @@ import { Workout } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { ExerciseInstance } from '../exercise/entities/exercise.entity';
+import { ClientSubscription } from 'src/subscription/entities/client.subscription.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -17,6 +18,8 @@ export class WorkoutService {
     private exerciseGroupRepository: Repository<ExerciseGroup>,
     @InjectRepository(ExerciseInstance)
     private exerciseInstanceRepository: Repository<ExerciseInstance>,
+    @InjectRepository(ClientSubscription)
+    private clientSubscriptionRepository: Repository<ClientSubscription>,
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
@@ -76,6 +79,14 @@ export class WorkoutService {
 
     workout.date = new Date();
     workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
+    workout.coach.id = assignWorkoutDto.coachId;
+    const subscriptionId = await this.clientSubscriptionRepository.findOneBy({
+      id: assignWorkoutDto.clientId,
+    });
+    if (!subscriptionId) {
+      throw new Error('Client subscription not found');
+    }
+    workout.subscription.id = subscriptionId.id;
 
     return this.workoutRepository.save(workout);
   }
@@ -86,6 +97,29 @@ export class WorkoutService {
       relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
     });
     return workouts;
+    return workouts.map((workout) => ({
+      ...workout,
+      groups: workout.groups.map((group) => ({
+        ...group,
+        exercises: group.exercises.map((exerciseInstance) => ({
+          ...exerciseInstance.exercise,
+          details: { ...exerciseInstance },
+        })),
+      })),
+    }));
+  }
+
+  async findAllBySubscriptionId(clientId: number): Promise<any> {
+    const subscription = await this.clientSubscriptionRepository.findOneBy({
+      id: clientId,
+    });
+    if (!subscription) {
+      throw new Error('Client subscription not found');
+    }
+    const workouts = await this.workoutRepository.find({
+      where: { subscription: { id: subscription.id } },
+      relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
+    });
     return workouts.map((workout) => ({
       ...workout,
       groups: workout.groups.map((group) => ({

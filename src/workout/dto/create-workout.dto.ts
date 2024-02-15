@@ -13,4 +13,5 @@ export class AssignWorkoutDto {
   date?: Date;
   workoutId: number;
   coachId: number;
+  clientId: number;
 }
