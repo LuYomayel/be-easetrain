@@ -127,37 +127,21 @@ export class WorkoutService {
     }));
   }
 
-  async findAllBySubscriptionId(clientId: number): Promise<any> {
-    const clientWorkouts = await this.workoutRepository
-      .createQueryBuilder('workout')
-      .innerJoinAndSelect('workout.subscription', 'subscription')
-      .innerJoinAndSelect('subscription.client', 'client')
-      .where('client.id = :clientId', { clientId: clientId })
-      .getMany();
-    const subscription = await this.clientSubscriptionRepository.findOneBy({
-      id: clientId,
-    });
-    if (!subscription) {
-      throw new Error('Client subscription not found');
+  async findAllByClientId(clientId: number): Promise<Workout[]> {
+    try {
+      const clientWorkouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .innerJoin('workout.subscription', 'subscription')
+        .innerJoin('subscription.user', 'user')
+        .where('user.id = :clientId', { clientId })
+        .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
+        .getMany();
+
+      return clientWorkouts;
+    } catch (error) {
+      console.error('Error fetching workouts by client ID:', error);
+      throw new Error('Error fetching workouts for the client');
     }
-    const workouts = await this.workoutRepository.find({
-      where: { subscription: { id: subscription.id } },
-      relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
-    });
-    return {
-      workouts,
-      clientWorkouts,
-    };
-    return workouts.map((workout) => ({
-      ...workout,
-      groups: workout.groups.map((group) => ({
-        ...group,
-        exercises: group.exercises.map((exerciseInstance) => ({
-          ...exerciseInstance.exercise,
-          details: { ...exerciseInstance },
-        })),
-      })),
-    }));
   }
 
   findOne(id: number) {
