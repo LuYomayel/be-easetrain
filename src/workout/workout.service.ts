@@ -73,25 +73,29 @@ export class WorkoutService {
   }
 
   async assignWorkout(assignWorkoutDto: AssignWorkoutDto) {
-    const workout = await this.workoutRepository.findOneBy({
-      id: assignWorkoutDto.workoutId,
-    });
-    console.log('workout', workout);
-    console.log('assignWorkoutDto', assignWorkoutDto);
-    workout.date = new Date();
-    workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
-    console.log('clientId', assignWorkoutDto.clientId);
-    workout.coach.id = assignWorkoutDto.coachId;
-    const subscriptionId = await this.clientSubscriptionRepository.findOneBy({
-      id: assignWorkoutDto.clientId,
-    });
-    console.log('subscriptionId', subscriptionId);
-    if (!subscriptionId) {
-      return new Error('Client subscription not found');
+    try {
+      const workout = await this.workoutRepository.findOneBy({
+        id: assignWorkoutDto.workoutId,
+      });
+      console.log('workout', workout);
+      console.log('assignWorkoutDto', assignWorkoutDto);
+      workout.date = new Date();
+      workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
+      console.log('clientId', assignWorkoutDto.clientId);
+      // workout.coach.id = assignWorkoutDto.coachId;
+      const subscriptionId = await this.clientSubscriptionRepository.findOneBy({
+        id: assignWorkoutDto.clientId,
+      });
+      console.log('subscriptionId', subscriptionId);
+      if (!subscriptionId) {
+        return new Error('Client subscription not found');
+      }
+      workout.subscription.id = subscriptionId.id;
+      console.log('workout', workout);
+      return this.workoutRepository.save(workout);
+    } catch (error) {
+      return new Error('Error assigning workout');
     }
-    workout.subscription.id = subscriptionId.id;
-    console.log('workout', workout);
-    return this.workoutRepository.save(workout);
   }
 
   async findAllByCoachId(coachId: number): Promise<any> {
