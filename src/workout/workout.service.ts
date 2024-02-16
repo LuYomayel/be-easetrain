@@ -41,6 +41,7 @@ export class WorkoutService {
       const workout = queryRunner.manager.create(Workout, createWorkoutDto);
       const savedWorkout = await queryRunner.manager.save(workout);
       console.log('savedWorkout', savedWorkout);
+      console.log('createWorkoutDto', createWorkoutDto);
       if (!savedWorkout.coach) {
         const coach = await this.coachRepository.findOneBy({
           user: { id: createWorkoutDto.coach.id },
