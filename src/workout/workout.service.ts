@@ -10,6 +10,7 @@ import { ExerciseInstance } from '../exercise/entities/exercise.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 import { Subscription } from 'src/subscription/entities/subscription.entity';
 import { User } from 'src/user/entities/user.entity';
+import { Coach } from 'src/user/entities/coach.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -26,6 +27,8 @@ export class WorkoutService {
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Coach)
+    private coachRepository: Repository<Coach>,
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
@@ -37,6 +40,14 @@ export class WorkoutService {
     try {
       const workout = queryRunner.manager.create(Workout, createWorkoutDto);
       const savedWorkout = await queryRunner.manager.save(workout);
+      console.log('savedWorkout', savedWorkout);
+      if (!savedWorkout.coach) {
+        const coach = await this.coachRepository.findOneBy({
+          user: { id: createWorkoutDto.coach.id },
+        });
+        savedWorkout.coach = coach;
+      }
+      console.log('savedWorkout after if: ', savedWorkout);
       for (const groupDto of createWorkoutDto.groups) {
         const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
           ...groupDto,
