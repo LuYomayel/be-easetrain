@@ -113,35 +113,39 @@ export class WorkoutService {
     coachId: number,
     clientId: number,
   ): Promise<Workout[]> {
-    // Primero, obtén el o los ID(s) de Subscription asociados con el clientId a través de ClientSubscription
-    const clientSubscriptions = await this.clientSubscriptionRepository
+    // Paso 1: Obtener la suscripción del cliente
+    const clientSubscription = await this.clientSubscriptionRepository
       .createQueryBuilder('clientSubscription')
-      .innerJoin('clientSubscription.client', 'client')
-      .innerJoin('clientSubscription.subscription', 'subscription')
+      .innerJoinAndSelect('clientSubscription.subscription', 'subscription')
+      .innerJoinAndSelect('clientSubscription.client', 'client')
       .where('client.id = :clientId', { clientId })
-      .select('subscription.id')
-      .getMany();
+      .getOne();
+    console.log('clientSubscription', clientSubscription);
+    if (!clientSubscription) {
+      // Manejar el caso de que no se encuentre la suscripción, por ejemplo, devolver todos los workouts del coach
+      // o manejar como un error, dependiendo de la lógica de negocio.
+      console.log('No subscription found for client');
+      return [];
+    }
 
-    const subscriptionIds = clientSubscriptions.map((cs) => cs.subscription.id);
-    console.log('subscriptionIds', subscriptionIds);
-    // Luego, realiza la consulta para obtener los workouts del coachId, excluyendo aquellos con los ID(s) de Subscription obtenidos anteriormente
-    const coachWorkouts = await this.workoutRepository
+    // Paso 2: Buscar workouts por coachId excluyendo los asociados a la suscripción del cliente
+    const subscriptionId = clientSubscription.subscription.id;
+    console.log('subscriptionId', subscriptionId);
+    const workouts = await this.workoutRepository
       .createQueryBuilder('workout')
-      .innerJoin('workout.coach', 'coach')
-      .leftJoin('workout.subscription', 'subscription')
-      .where('coach.id = :coachId', { coachId })
-      .andWhere(
-        subscriptionIds.length > 0
-          ? 'subscription.id NOT IN (:...subscriptionIds)'
-          : '1=1',
-        { subscriptionIds },
+      .innerJoinAndSelect('workout.coach', 'coach', 'coach.id = :coachId', {
+        coachId,
+      })
+      .leftJoinAndSelect('workout.groups', 'groups')
+      .leftJoinAndSelect('groups.exercises', 'exercises')
+      .leftJoinAndSelect('exercises.exercise', 'exercise')
+      .where(
+        'workout.subscriptionId != :subscriptionId OR workout.subscriptionId IS NULL',
+        { subscriptionId },
       )
-      .leftJoinAndSelect('workout.groups', 'group')
-      .leftJoinAndSelect('group.exercises', 'exerciseInstance')
-      .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
       .getMany();
 
-    return coachWorkouts;
+    return workouts;
   }
 
   async findAllByClientId(clientId: number): Promise<any> {
