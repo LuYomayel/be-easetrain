@@ -109,12 +109,39 @@ export class WorkoutService {
     }
   }
 
-  async findAllByCoachId(coachId: number): Promise<any> {
-    const workouts = await this.workoutRepository.find({
-      where: { coach: { id: coachId } },
-      relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
-    });
-    return workouts;
+  async findAllWorkoutsByCoachIdExcludingClientId(
+    coachId: number,
+    clientId: number,
+  ): Promise<Workout[]> {
+    // Primero, obtén el o los ID(s) de Subscription asociados con el clientId a través de ClientSubscription
+    const clientSubscriptions = await this.clientSubscriptionRepository
+      .createQueryBuilder('clientSubscription')
+      .innerJoin('clientSubscription.client', 'client')
+      .innerJoin('clientSubscription.subscription', 'subscription')
+      .where('client.id = :clientId', { clientId })
+      .select('subscription.id')
+      .getMany();
+
+    const subscriptionIds = clientSubscriptions.map((cs) => cs.subscription.id);
+    console.log('subscriptionIds', subscriptionIds);
+    // Luego, realiza la consulta para obtener los workouts del coachId, excluyendo aquellos con los ID(s) de Subscription obtenidos anteriormente
+    const coachWorkouts = await this.workoutRepository
+      .createQueryBuilder('workout')
+      .innerJoin('workout.coach', 'coach')
+      .leftJoin('workout.subscription', 'subscription')
+      .where('coach.id = :coachId', { coachId })
+      .andWhere(
+        subscriptionIds.length > 0
+          ? 'subscription.id NOT IN (:...subscriptionIds)'
+          : '1=1',
+        { subscriptionIds },
+      )
+      .leftJoinAndSelect('workout.groups', 'group')
+      .leftJoinAndSelect('group.exercises', 'exerciseInstance')
+      .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+      .getMany();
+
+    return coachWorkouts;
   }
 
   async findAllByClientId(clientId: number): Promise<any> {
