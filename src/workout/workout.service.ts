@@ -38,17 +38,18 @@ export class WorkoutService {
     await queryRunner.startTransaction();
 
     try {
-      const workout = queryRunner.manager.create(Workout, createWorkoutDto);
+      const coach = await this.coachRepository.findOneBy({
+        user: { id: createWorkoutDto.coachId },
+      });
+      const newWorkout = {
+        ...createWorkoutDto,
+        coach,
+      };
+      const workout = queryRunner.manager.create(Workout, newWorkout);
       const savedWorkout = await queryRunner.manager.save(workout);
       console.log('savedWorkout', savedWorkout);
       console.log('createWorkoutDto', createWorkoutDto);
-      if (!savedWorkout.coach) {
-        const coach = await this.coachRepository.findOneBy({
-          user: { id: createWorkoutDto.coach.id },
-        });
-        savedWorkout.coach = coach;
-      }
-      console.log('savedWorkout after if: ', savedWorkout);
+
       for (const groupDto of createWorkoutDto.groups) {
         const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
           ...groupDto,

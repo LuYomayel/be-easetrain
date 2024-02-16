@@ -6,7 +6,7 @@ export class CreateWorkoutDto {
   dayOfWeek?: string;
   date?: Date;
   groups: IExerciseGroup[];
-  coach: ICoach;
+  coachId: number;
 }
 
 export class AssignWorkoutDto {
