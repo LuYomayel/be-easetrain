@@ -31,7 +31,7 @@ export class WorkoutController {
   }
 
   @Get('/coachId/:coachId/clientId/:clientId')
-  findAllByCoachId(
+  findAllByCoachIdAndClient(
     @Param('coachId') coachId: string,
     @Param('clientId') clientId: string,
   ) {
@@ -44,6 +44,11 @@ export class WorkoutController {
   @Get('/clientId/:clientId')
   findAllByClientId(@Param('clientId') clientId: number) {
     return this.workoutService.findAllByClientId(clientId);
+  }
+
+  @Get('/coachId/:coachId')
+  findAllByCoachId(@Param('coachId') coachId: number) {
+    return this.workoutService.findAllByCoachId(coachId);
   }
 
   @Get(':id')

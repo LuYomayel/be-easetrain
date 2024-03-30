@@ -182,6 +182,24 @@ export class WorkoutService {
     }
   }
 
+  async findAllByCoachId(coachId: number): Promise<any> {
+    try {
+      const coachWorkouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .innerJoin('workout.coach', 'coach')
+        .leftJoinAndSelect('workout.groups', 'group') // Asume que la relación se llama 'groups' en 'Workout'
+        .leftJoinAndSelect('group.exercises', 'exerciseInstance') // Correctly aliasing as 'exerciseInstance'
+        .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+        .where('coach.id = :coachId', { coachId })
+        .getMany();
+
+      return coachWorkouts;
+    } catch (error) {
+      console.error('Error fetching workouts by coach ID:', error);
+      throw new Error('Error fetching workouts for the coach');
+    }
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} workout`;
   }
