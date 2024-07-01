@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
@@ -10,19 +11,27 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { ReviewModule } from './review/review.module';
 import { PaymentModule } from './payment/payment.module';
 import { ExerciseModule } from './exercise/exercise.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: '127.0.0.1',
-      port: 3306,
-      username: 'trainease',
-      password: 'Pipi2612',
-      database: 'coaching',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
-      logging: false,
+    ConfigModule.forRoot({
+      isGlobal: true, // Hace que las variables de entorno estén disponibles globalmente
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get<string>('DATABASE_HOST'),
+        port: configService.get<number>('DATABASE_PORT'),
+        username: configService.get<string>('DATABASE_USERNAME'),
+        password: configService.get<string>('DATABASE_PASSWORD'),
+        database: configService.get<string>('DATABASE_DBNAME'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,
+        logging: false,
+      }),
+      inject: [ConfigService],
     }),
     UserModule,
     MealPlanModule,
@@ -32,6 +41,7 @@ import { ExerciseModule } from './exercise/exercise.module';
     ReviewModule,
     PaymentModule,
     ExerciseModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

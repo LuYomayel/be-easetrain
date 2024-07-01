@@ -11,6 +11,7 @@ import {
 import { Coach } from './entities/coach.entity';
 import { Client } from './entities/client.entity';
 import { LoginDto } from './dto/log-in.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -29,6 +30,10 @@ export class UserService {
 
   async findOne(id: number): Promise<User> {
     return await this.userRepository.findOne({ where: { id } });
+  }
+
+  async findOneByEmail(email: string) {
+    return await this.userRepository.findOne({ where: { email } });
   }
 
   async findCoach(id: number): Promise<Coach> {
@@ -73,19 +78,25 @@ export class UserService {
     return await this.coachRepository.find({ relations: ['user'] });
   }
 
-  async create(user: CreateUserDTO): Promise<User> {
-    const newUser = await this.userRepository.findOne({
-      where: { email: user.email, userType: user.userType },
+  async create(createUserDto: CreateUserDTO): Promise<User> {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(createUserDto.password, saltRounds);
+    const findUser = await this.userRepository.findOne({
+      where: { email: createUserDto.email, userType: createUserDto.userType },
     });
-    if (newUser) {
-      console.log(newUser);
+    if (findUser) {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
-    if (user.userType !== 'client' && user.userType !== 'coach') {
+    if (createUserDto.userType !== 'client' && createUserDto.userType !== 'coach') {
       throw new HttpException('User type not valid', HttpStatus.BAD_REQUEST);
     }
 
-    return await this.userRepository.save(user);
+    const newUser = this.userRepository.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+
+    return this.userRepository.save(newUser);
   }
 
   async createCoach(coach: CreateCoachDTO, userId: number): Promise<Coach> {
@@ -146,7 +157,23 @@ export class UserService {
   }
 
   async update(id: number, user: UpdateUserDTO): Promise<void> {
-    await this.userRepository.update(id, user);
+    const findUser = await this.userRepository.findOne({
+      where: { id },
+    });
+    if (!findUser) {
+      throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
+    }
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+
+    // Crear un nuevo objeto user con el password encriptado
+    const updatedUser = {
+      ...findUser,
+      email: user.email ? user.email : findUser.email,
+      password: hashedPassword,
+    };
+    console.log('updatedUser', findUser)
+    await this.userRepository.save(updatedUser);
   }
 
   async remove(id: number): Promise<string> {
