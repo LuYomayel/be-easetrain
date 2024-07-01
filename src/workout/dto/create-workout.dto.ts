@@ -1,5 +1,6 @@
 import { IExerciseGroup } from 'src/exercise/entities/exercise-group.entity';
-import { ICoach } from 'src/user/entities/coach.entity';
+import { IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
+import { IWorkout } from '../entities/workout.entity';
 
 export class CreateWorkoutDto {
   planName: string;
@@ -10,10 +11,6 @@ export class CreateWorkoutDto {
 }
 
 export class AssignWorkoutDto {
-  planName: string;
-  dayOfWeek?: string;
-  date?: Date;
-  workoutId: number;
-  coachId: number;
-  clientId: number;
+  clientSubscription: IClientSubscription;
+  workouts: IWorkout[]
 }

@@ -6,7 +6,7 @@ import { In, Repository } from 'typeorm';
 import { Workout } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
-import { ExerciseInstance } from '../exercise/entities/exercise.entity';
+import { Exercise, ExerciseInstance } from '../exercise/entities/exercise.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 import { Subscription } from 'src/subscription/entities/subscription.entity';
 import { User } from 'src/user/entities/user.entity';
@@ -17,6 +17,8 @@ export class WorkoutService {
     @InjectRepository(Workout)
     private workoutRepository: Repository<Workout>,
     private dataSource: DataSource,
+    @InjectRepository(Exercise)
+    private exerciseRepository: Repository<Exercise>,
     @InjectRepository(ExerciseGroup)
     private exerciseGroupRepository: Repository<ExerciseGroup>,
     @InjectRepository(ExerciseInstance)
@@ -33,10 +35,10 @@ export class WorkoutService {
 
   async create(createWorkoutDto: CreateWorkoutDto) {
     const queryRunner = this.dataSource.createQueryRunner();
-
+  
     await queryRunner.connect();
     await queryRunner.startTransaction();
-
+  
     try {
       const coach = await this.coachRepository.findOneBy({
         user: { id: createWorkoutDto.coachId },
@@ -47,36 +49,41 @@ export class WorkoutService {
       };
       const workout = queryRunner.manager.create(Workout, newWorkout);
       const savedWorkout = await queryRunner.manager.save(workout);
-      console.log('savedWorkout', savedWorkout);
-      console.log('createWorkoutDto', createWorkoutDto);
-
+  
       for (const groupDto of createWorkoutDto.groups) {
         const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
-          ...groupDto,
-          exercises: groupDto.exercises.map((exerciseDto) =>
-            queryRunner.manager.create(ExerciseInstance, {
-              ...exerciseDto,
-              exercise: exerciseDto.exercise,
-            }),
-          ),
+          set: groupDto.set,
+          rest: groupDto.rest,
+          groupNumber: groupDto.groupNumber,
           workout: savedWorkout,
         });
         const savedGroup = await queryRunner.manager.save(exerciseGroup);
-        console.log('savedGroup', savedGroup);
+  
         for (const exerciseDto of groupDto.exercises) {
+          console.log(exerciseDto)
+          const exerciseInstanceData = {
+            exercise: { id: exerciseDto.exercise.id }, // Relación a la entidad Exercise
+            group: savedGroup,
+            repetitions: exerciseDto.repetitions,
+            sets: exerciseDto.sets,
+            time: exerciseDto.time,
+            weight: exerciseDto.weight,
+            restInterval: exerciseDto.restInterval,
+            tempo: exerciseDto.tempo,
+            notes: exerciseDto.notes,
+            difficulty: exerciseDto.difficulty,
+            duration: exerciseDto.duration,
+            distance: exerciseDto.distance,
+            videoUrl: exerciseDto.videoUrl,
+          };
           const exerciseInstance = queryRunner.manager.create(
             ExerciseInstance,
-            {
-              ...exerciseDto,
-              group: savedGroup,
-              exercise: exerciseDto.exercise,
-            },
+            exerciseInstanceData,
           );
-          console.log('exerciseInstance', exerciseInstance);
           await queryRunner.manager.save(exerciseInstance);
         }
       }
-
+  
       await queryRunner.commitTransaction();
       return savedWorkout;
     } catch (error) {
@@ -87,36 +94,175 @@ export class WorkoutService {
     }
   }
 
-  findAll() {
-    return `This action returns all workout`;
+  async copyWorkoutPlan(planId: number): Promise<Workout> {
+    const workoutPlan = await this.workoutRepository.findOne({
+      where: { id: planId },
+      relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
+    });
+
+    if (!workoutPlan) {
+      throw new Error('Workout plan not found');
+    }
+
+    // Crear el nuevo Workout sin relaciones
+    const newWorkoutPlan = this.workoutRepository.create({
+      planName: `Copia - ${workoutPlan.planName}`,
+      dateAssigned: new Date(),
+      status: 'pending',
+    });
+
+    const savedWorkout = await this.workoutRepository.save(newWorkoutPlan);
+
+    // Recorrer los grupos y ejercicios para crear nuevas instancias
+    for (const group of workoutPlan.groups) {
+      const newGroup = this.exerciseGroupRepository.create({
+        set: group.set,
+        rest: group.rest,
+        groupNumber: group.groupNumber,
+        workout: savedWorkout,
+      });
+
+      const savedGroup = await this.exerciseGroupRepository.save(newGroup);
+
+      for (const exercise of group.exercises) {
+        console.log(exercise)
+        const newExercise = this.exerciseInstanceRepository.create({
+          exercise: exercise.exercise,
+          group: savedGroup,
+          repetitions: exercise.repetitions,
+          sets: exercise.sets,
+          time: exercise.time,
+          weight: exercise.weight,
+          restInterval: exercise.restInterval,
+          tempo: exercise.tempo,
+          notes: exercise.notes,
+          difficulty: exercise.difficulty,
+          duration: exercise.duration,
+          distance: exercise.distance,
+        });
+
+        await this.exerciseInstanceRepository.save(newExercise);
+      }
+    }
+
+    return savedWorkout;
+  }
+
+  async update(updateWorkoutDto: UpdateWorkoutDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+  
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  
+    try {
+      const existingWorkout = await this.workoutRepository.findOne({
+        where: { id: updateWorkoutDto.id },
+        relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'], // Incluye las relaciones necesarias
+      });
+      // console.log(existingWorkout)
+      if (!existingWorkout) {
+        throw new Error('Workout not found');
+      }
+  
+      const updatedWorkout = {
+        ...existingWorkout,
+        ...updateWorkoutDto,      
+      };
+      // console.log(updatedWorkout)
+      await queryRunner.manager.save(Workout, updatedWorkout);
+  
+      for (const groupDto of updateWorkoutDto.groups) {
+        const existingGroup = existingWorkout.groups.find(g => g.id === groupDto.id);
+        // console.log('existingGroup: ', existingGroup, groupDto)
+        const exerciseGroup = existingGroup ? {
+          ...existingGroup,
+          ...groupDto,
+        } : queryRunner.manager.create(ExerciseGroup, {
+          ...groupDto,
+          workout: existingWorkout,
+        });
+        
+        const savedGroup = await queryRunner.manager.save(ExerciseGroup, exerciseGroup);
+        
+        for (const exerciseDto of groupDto.exercises) {
+          const existingExercise = existingGroup?.exercises.find(e => e.id === exerciseDto.id);
+          const exerciseInstance = existingExercise ? {
+            ...existingExercise,
+            ...exerciseDto,
+            group: savedGroup,
+          } : queryRunner.manager.create(ExerciseInstance, {
+            ...exerciseDto,
+            exercise: { id: exerciseDto.exercise.id },
+            group: savedGroup,
+          });
+  
+          await queryRunner.manager.save(ExerciseInstance, exerciseInstance);
+        }
+      }
+  
+      await queryRunner.commitTransaction();
+      return updatedWorkout;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async findAll() {
+    try {
+      const allWorkouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .leftJoinAndSelect('workout.groups', 'group') // Asume que la relación se llama 'groups' en 'Workout'
+        .leftJoinAndSelect('group.exercises', 'exerciseInstance') // Correctly aliasing as 'exerciseInstance'
+        .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+        // .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
+        .getMany();
+
+      return allWorkouts;
+    } catch (error) {
+      console.error('Error fetching workouts by client ID:', error);
+      throw new Error('Error fetching workouts for the client');
+    }
   }
 
   async assignWorkout(assignWorkoutDto: AssignWorkoutDto) {
     try {
-      const workout = await this.workoutRepository.findOneBy({
-        id: assignWorkoutDto.workoutId,
-      });
-      console.log('workout', workout);
-      console.log('assignWorkoutDto', assignWorkoutDto);
-      workout.date = new Date();
-      workout.dayOfWeek = assignWorkoutDto.dayOfWeek;
-      console.log('clientId', assignWorkoutDto.clientId);
-
-      const clientSubscription = await this.clientSubscriptionRepository
-        .createQueryBuilder('clientSubscription')
-        .innerJoinAndSelect('clientSubscription.client', 'client')
-        .innerJoinAndSelect('clientSubscription.subscription', 'subscription')
-        .where('client.id = :clientId', { clientId: assignWorkoutDto.clientId })
-        .getOne();
-
-      console.log('clientSubscription', clientSubscription);
-      if (!clientSubscription) {
-        return new Error('Client subscription not found');
+      const alreadyAssignedWorkouts = [];
+      for(const workout of assignWorkoutDto.workouts){
+        // Verificar si el workout ya está asignado a la suscripción del cliente
+        const existingAssignment = await this.workoutRepository.findOne({
+          where: {
+            id: workout.id,
+            clientSubscription: { id: assignWorkoutDto.clientSubscription.id },
+          },
+        });
+        if (existingAssignment) {
+          console.log(`Workout ${workout.id} is already assigned to subscription ${assignWorkoutDto.clientSubscription.id}`);
+          alreadyAssignedWorkouts.push(workout.planName);
+        } else {
+          // Actualizar el workout
+          const updatedWorkout = await this.workoutRepository.update(
+            { id: workout.id },
+            {
+              clientSubscription: { id: assignWorkoutDto.clientSubscription.id },
+              dateAssigned: new Date(),
+              status: 'pending',
+            },
+          );
+          
+        }
+      }
+      
+      if (alreadyAssignedWorkouts.length > 0) {
+        return {
+          message: 'Some workouts were already assigned to the selected user',
+          alreadyAssignedWorkouts,
+        };
       }
 
-      // Ahora que tienes la suscripción, puedes asignarla al workout
-      workout.subscription = clientSubscription.subscription;
-      return this.workoutRepository.save(workout);
+      return { message: 'All workouts assigned successfully' };
     } catch (error) {
       return new Error('Error assigning workout');
     }
@@ -165,13 +311,12 @@ export class WorkoutService {
     try {
       const clientWorkouts = await this.workoutRepository
         .createQueryBuilder('workout')
-        .innerJoin('workout.subscription', 'subscription')
-        .innerJoin('subscription.user', 'user')
+        .innerJoin('workout.clientSubscription', 'clientSubscription')
+        .innerJoin('clientSubscription.client', 'client')
         .leftJoinAndSelect('workout.groups', 'group') // Asume que la relación se llama 'groups' en 'Workout'
-
         .leftJoinAndSelect('group.exercises', 'exerciseInstance') // Correctly aliasing as 'exerciseInstance'
         .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
-        .where('user.id = :clientId', { clientId })
+        .where('clientSubscription.id = :clientId', { clientId })
         // .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
         .getMany();
 
@@ -200,15 +345,146 @@ export class WorkoutService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} workout`;
+  async findOneWorkoutByClientId(clientId: number, planId: number): Promise<any> {
+    try {
+      const workout = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .leftJoinAndSelect('workout.clientSubscription', 'clientSubscription')
+        .leftJoinAndSelect('clientSubscription.client', 'client')
+        .leftJoinAndSelect('workout.groups', 'group')
+        .leftJoinAndSelect('group.exercises', 'exerciseInstance')
+        .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+        .where('client.id = :clientId', { clientId })
+        .andWhere('workout.id = :planId', { planId })
+        .getOne();
+  
+      if (!workout) {
+        throw new Error('Workout not found');
+      }
+      console.log('workout: ', workout)
+      return workout;
+    } catch (error) {
+      console.error('Error fetching workout details:', error);
+      throw new Error('Error fetching workout details');
+    }
+  }
+  async findOne(workoutId: number) {
+    const allWorkouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .leftJoinAndSelect('workout.groups', 'group') // Asume que la relación se llama 'groups' en 'Workout'
+        .leftJoinAndSelect('group.exercises', 'exerciseInstance') // Correctly aliasing as 'exerciseInstance'
+        .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+        .where('workout.id = :workoutId', {workoutId}) // Si solo quieres las suscripciones activas
+        .getOne();
+
+      return allWorkouts;
+    } 
+
+  async remove(planId: number) {
+    const workoutPlan = await this.workoutRepository.findOne({
+      where: { id: planId },
+      relations: ['groups', 'groups.exercises'],
+    });
+
+    if (!workoutPlan) {
+      throw new Error('Workout plan not found');
+    }
+
+    // Eliminar las instancias de ejercicios
+    for (const group of workoutPlan.groups) {
+      for (const exercise of group.exercises) {
+        await this.exerciseInstanceRepository.delete(exercise.id);
+      }
+    }
+
+    // Eliminar los grupos
+    for (const group of workoutPlan.groups) {
+      await this.exerciseGroupRepository.delete(group.id);
+    }
+
+    // Eliminar el plan de entrenamiento
+    await this.workoutRepository.delete(planId);
   }
 
-  update(id: number, updateWorkoutDto: UpdateWorkoutDto) {
-    return `This action updates a #${id} workout`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} workout`;
+  async seedDatabase() {
+    // return 'Hola'
+    const clientSubscription = await this.clientSubscriptionRepository.findOne({ where: { id: 23 } }); // Asumiendo que el cliente con id 1 existe
+    // return clientSubscription;
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+  
+    const generatePastDate = (daysAgo: number) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - daysAgo);
+      return date;
+    };
+  
+    const generateFutureDate = (daysFromNow: number) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + daysFromNow);
+      return date;
+    };
+  
+    const workouts = [];
+  
+    // Crear 10 planes vencidos
+    for (let i = 0; i < 10; i++) {
+      const workout = new Workout();
+      workout.clientSubscription = clientSubscription;
+      workout.planName = `Past Plan ${i + 1}`;
+      workout.expectedStartDate = generatePastDate(30 + i * 7);
+      workout.expectedEndDate = generatePastDate(30 + (i + 1) * 7);
+      workout.realStartedDate = generatePastDate(30 + i * 7);
+      workout.realEndDate = generatePastDate(30 + (i + 1) * 7);
+      workout.status = 'completed';
+      workout.isRepetead = true;
+      workouts.push(workout);
+    }
+  
+    // Crear 5 planes futuros
+    for (let i = 0; i < 5; i++) {
+      const workout = new Workout();
+      workout.clientSubscription = clientSubscription;
+      workout.planName = `Future Plan ${i + 1}`;
+      workout.expectedStartDate = generateFutureDate(i * 7);
+      workout.expectedEndDate = generateFutureDate((i + 1) * 7);
+      workout.status = 'pending';
+      workout.isRepetead = true;
+      workouts.push(workout);
+    }
+  
+    await this.workoutRepository.save(workouts);
+    console.log(workouts)
+    // return workouts;
+    const exercise = await this.exerciseRepository.findOne({ where: {id:1}})
+    // Crear grupos y ejercicios de ejemplo para cada plan (opcional)
+    for (const workout of workouts) {
+      const exerciseGroup = new ExerciseGroup();
+      exerciseGroup.set = 3;
+      exerciseGroup.rest = 60;
+      exerciseGroup.groupNumber = 1;
+      exerciseGroup.workout = workout;
+  
+      const savedGroup = await this.exerciseGroupRepository.save(exerciseGroup);
+      
+      const exerciseInstance = new ExerciseInstance();
+      exerciseInstance.exercise = exercise // Asumiendo que el ejercicio con id 1 existe
+      exerciseInstance.group = savedGroup;
+      exerciseInstance.repetitions = '10';
+      exerciseInstance.sets = '3';
+      exerciseInstance.time = '30';
+      exerciseInstance.weight = '20kg';
+      exerciseInstance.restInterval = '60s';
+      exerciseInstance.tempo = '2-2-2';
+      exerciseInstance.notes = 'Focus on form';
+      exerciseInstance.difficulty = 'medium';
+      exerciseInstance.duration = '10m';
+      exerciseInstance.distance = '1km';
+  
+      await this.exerciseInstanceRepository.save(exerciseInstance);
+    }
+  
+    console.log('Database seeded successfully!');
   }
 }

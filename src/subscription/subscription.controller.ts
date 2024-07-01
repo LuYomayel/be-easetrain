@@ -50,14 +50,6 @@ export class SubscriptionController {
     return this.suscriptionService.findOne(+id);
   }
 
-  // @Patch(':id')
-  // update(
-  //   @Param('id') id: string,
-  //   @Body() updateSuscriptionDto: UpdateSuscriptionDto,
-  // ) {
-  //   return this.suscriptionService.update(+id, updateSuscriptionDto);
-  // }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.suscriptionService.remove(+id);
@@ -66,5 +58,10 @@ export class SubscriptionController {
   @Get('coach/:id')
   findCoachSubscriptions(@Param('id') id: number) {
     return this.suscriptionService.findClientsSubscribedToCoach(id);
+  }
+
+  @Get('client/:clientId')
+  findClientSubscription(@Param('clientId') clientId: number) {
+    return this.suscriptionService.findClientSubscription(clientId);
   }
 }

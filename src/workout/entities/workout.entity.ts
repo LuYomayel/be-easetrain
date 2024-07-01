@@ -10,19 +10,25 @@ import {
   IExerciseGroup,
   ExerciseGroup,
 } from '../../exercise/entities/exercise-group.entity';
-import { Coach } from 'src/user/entities/coach.entity';
-
+import { Coach, ICoach } from '../../user/entities/coach.entity';
+import { ClientSubscription, IClientSubscription } from '../../subscription/entities/client.subscription.entity';
 export interface IWorkout {
   id: number;
-  subscription?: Subscription;
-  coach: Coach;
+  clientSubscription?: IClientSubscription;
+  coach: ICoach;
   planName: string;
-  dayOfWeek?: string;
   date?: Date;
-  startTime?: string;
-  endTime?: string;
+  isRepetead:boolean;
+  repeatDays: string[];
+  expectedStartDate?: Date;
+  expectedEndDate?: Date;
+  realStartedDate?: Date;
+  realEndDate?: Date;
   notes?: string;
-  status?: string;
+  status?: string; // e.g., 'pending', 'completed', 'in-progress'
+  dateAssigned: Date;
+  dateCompleted?: Date;
+  feedback?: string;
   groups: IExerciseGroup[];
 }
 
@@ -32,14 +38,17 @@ export class Workout implements IWorkout {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Subscription, (subscription) => subscription.workouts)
-  subscription?: Subscription;
+  @ManyToOne(() => ClientSubscription, (clientSubscription) => clientSubscription.workouts)
+  clientSubscription?: ClientSubscription;
 
   @ManyToOne(() => Coach, (coach) => coach.id)
   coach: Coach;
 
-  @Column({ nullable: true })
-  dayOfWeek?: string;
+  @Column({ default: false })
+  isRepetead: boolean;
+
+  @Column('simple-array', { nullable: true })
+  repeatDays: string[]; // e.g., ['Monday', 'Wednesday', 'Friday']
 
   @Column()
   planName: string;
@@ -47,17 +56,32 @@ export class Workout implements IWorkout {
   @Column({ type: 'date', nullable: true })
   date?: Date;
 
-  @Column({ nullable: true })
-  startTime?: string;
+  @Column({ type: 'datetime', nullable: true })
+  expectedStartDate: Date;
 
-  @Column({ nullable: true })
-  endTime?: string;
+  @Column({ type: 'datetime', nullable: true })
+  expectedEndDate: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  realStartedDate: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  realEndDate: Date;
 
   @Column({ nullable: true })
   notes?: string;
 
   @Column({ nullable: true })
   status?: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  dateAssigned: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  dateCompleted?: Date;
+
+  @Column({ nullable: true })
+  feedback?: string;
 
   @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workout)
   groups: ExerciseGroup[];

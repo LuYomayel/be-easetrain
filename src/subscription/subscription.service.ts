@@ -154,17 +154,33 @@ export class SubscriptionService {
   }
 
   async findClientsSubscribedToCoach(coachId: number) {
-    const coach = await this.userService.findOne(coachId);
+    const coach = await this.userService.findCoach(coachId);
     if (!coach) {
       throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
     }
-
     return await this.clientSubscriptionRepository
       .createQueryBuilder('clientSubscription')
       .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
+      .leftJoinAndSelect('clientSubscription.workouts', 'workout')
       .leftJoinAndSelect('clientSubscription.client', 'client')
-      .leftJoinAndSelect('clientSubscription.subscription', 'subscription')
+      .leftJoinAndSelect('client.user', 'user')
       .where('coachPlan.coachId = :coachId', { coachId })
       .getMany();
   }
+
+  async findClientSubscription(clientId: number){
+    console.log(clientId)
+    const clientSubscription = await this.clientSubscriptionRepository.findOne({
+      where: { id: clientId } ,
+      relations: ['client', 'client.user', 'workouts' , 'workouts.groups', 'workouts.groups.exercises', 'workouts.groups.exercises.exercise']
+    });
+
+    // if (!clientSubscription) {
+    //   throw new Error('Client subscription not found');
+    // }
+    console.log(clientSubscription)
+    return clientSubscription;
+  }
+
+  
 }

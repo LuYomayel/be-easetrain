@@ -67,16 +67,17 @@ export interface IExerciseInstance {
   id: number;
   exercise: IExercise;
   group: IExerciseGroup;
-  repetitions?: number;
-  sets?: number;
-  time?: number;
-  weight?: number;
-  restInterval?: number;
+  repetitions?: string;
+  sets?: string;
+  time?: string;
+  weight?: string;
+  restInterval?: string;
   tempo?: string;
   notes?: string;
   difficulty?: string;
-  duration?: number;
-  distance?: number;
+  duration?: string;
+  distance?: string;
+  videoUrl?: string;
 }
 
 @Entity()
@@ -88,19 +89,19 @@ export class ExerciseInstance implements IExerciseInstance {
   exercise: Exercise;
 
   @Column({ nullable: true })
-  repetitions?: number;
+  repetitions?: string;
 
   @Column({ nullable: true })
-  sets?: number;
+  sets?: string;
 
   @Column({ nullable: true })
-  time?: number;
+  time?: string;
 
   @Column({ nullable: true })
-  weight?: number;
+  weight?: string;
 
   @Column({ nullable: true })
-  restInterval?: number;
+  restInterval?: string;
 
   @Column({ nullable: true })
   tempo?: string;
@@ -112,10 +113,10 @@ export class ExerciseInstance implements IExerciseInstance {
   difficulty?: string;
 
   @Column({ nullable: true })
-  duration?: number;
+  duration?: string;
 
   @Column({ nullable: true })
-  distance?: number;
+  distance?: string;
 
   @ManyToOne(() => ExerciseGroup, (group) => group.exercises)
   group: ExerciseGroup;

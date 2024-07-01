@@ -1,14 +1,24 @@
-// ClientSubscription.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   OneToOne,
   JoinColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-import { Subscription } from './subscription.entity';
-import { CoachPlan } from './coach.plan.entity';
+import { ISubscription, Subscription } from './subscription.entity';
+import { CoachPlan, ICoachPlan } from './coach.plan.entity';
+import { Client, IClient } from 'src/user/entities/client.entity';
+import { IWorkout, Workout } from '../../workout/entities/workout.entity';
+
+export interface IClientSubscription{
+  id: number;
+  subscription: ISubscription;
+  client: IClient;
+  coachPlan: ICoachPlan;
+  workouts: IWorkout[];
+}
 
 @Entity()
 export class ClientSubscription {
@@ -19,10 +29,13 @@ export class ClientSubscription {
   @JoinColumn()
   subscription: Subscription;
 
-  @OneToOne(() => User)
+  @OneToOne(() => Client)
   @JoinColumn()
-  client: User;
+  client: Client;
 
   @ManyToOne(() => CoachPlan)
   coachPlan: CoachPlan;
+
+  @OneToMany(() => Workout, (workout) => workout.clientSubscription)
+  workouts: Workout[];
 }

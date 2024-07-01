@@ -7,12 +7,12 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { Workout } from '../../workout/entities/workout.entity';
-import { ExerciseInstance } from '../../exercise/entities/exercise.entity';
+import { ExerciseInstance, IExerciseInstance } from '../../exercise/entities/exercise.entity';
 
 export interface IExerciseGroup {
-  id: number;
+  id: number; 
   workout: Workout;
-  exercises: ExerciseInstance[];
+  exercises: IExerciseInstance[];
   set: number;
   rest: number;
   groupNumber: number;
