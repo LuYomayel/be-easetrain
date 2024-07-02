@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { WorkoutService } from './workout.service';
 import { WorkoutController } from './workout.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Workout } from './entities/workout.entity';
+import { Workout, WorkoutInstance } from './entities/workout.entity';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { Exercise, ExerciseInstance } from '../exercise/entities/exercise.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
@@ -13,6 +13,7 @@ import { Coach } from 'src/user/entities/coach.entity';
   imports: [
     TypeOrmModule.forFeature([
       Workout,
+      WorkoutInstance,
       Exercise,
       ExerciseGroup,
       ExerciseInstance,

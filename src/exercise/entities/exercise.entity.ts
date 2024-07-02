@@ -77,7 +77,6 @@ export interface IExerciseInstance {
   difficulty?: string;
   duration?: string;
   distance?: string;
-  videoUrl?: string;
 }
 
 @Entity()

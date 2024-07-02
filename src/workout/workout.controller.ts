@@ -21,10 +21,10 @@ export class WorkoutController {
     return this.workoutService.create(createWorkoutDto);
   }
 
-  @Post('/copy/:planId')
-  copyWorkoutPlan(@Param('planId') planId: number) {
-    return this.workoutService.copyWorkoutPlan(planId);
-  }
+  // @Post('/copy/:planId')
+  // copyWorkoutPlan(@Param('planId') planId: number) {
+  //   return this.workoutService.copyWorkoutPlan(planId);
+  // }
 
   @Get()
   findAll() {
@@ -58,6 +58,11 @@ export class WorkoutController {
     return this.workoutService.findAllByClientId(clientId);
   }
 
+  @Get('/userId/:userId')
+  findAllByUserId(@Param('userId') userId: number) {
+    return this.workoutService.findAllByUserId(userId);
+  }
+
   @Get('/clientId/:clientId/planId/:planId')
   findOneWorkoutByClientId(@Param('clientId') clientId: number, @Param('planId') planId:number) {
     return this.workoutService.findOneWorkoutByClientId(clientId, planId);
@@ -69,14 +74,24 @@ export class WorkoutController {
 
   
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
-    return this.workoutService.update(updateWorkoutDto);
+  @Put('/template/:id')
+  updateWorkoutTemplate(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
+    return this.workoutService.updateWorkoutTemplate(updateWorkoutDto);
+  }
+
+  @Put('/instance/:id')
+  updateWorkoutInstance(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
+    return this.workoutService.updateWorkoutInstance(updateWorkoutDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.workoutService.remove(+id);
+  removeWorkout(@Param('id') id: string) {
+    return this.workoutService.removeWorkout(+id);
   }
-
+  
+  
+  @Delete('/deleteInstance/:instanceId')
+  removeWorkoutInstance(@Param('instanceId') instanceId: number) {
+    return this.workoutService.removeWorkoutInstance(instanceId);
+  }
 }

@@ -10,14 +10,14 @@ import { User } from '../../user/entities/user.entity';
 import { ISubscription, Subscription } from './subscription.entity';
 import { CoachPlan, ICoachPlan } from './coach.plan.entity';
 import { Client, IClient } from 'src/user/entities/client.entity';
-import { IWorkout, Workout } from '../../workout/entities/workout.entity';
+import { IWorkoutInstance, WorkoutInstance } from '../../workout/entities/workout.entity';
 
 export interface IClientSubscription{
   id: number;
   subscription: ISubscription;
   client: IClient;
   coachPlan: ICoachPlan;
-  workouts: IWorkout[];
+  workoutInstances: IWorkoutInstance[];
 }
 
 @Entity()
@@ -36,6 +36,6 @@ export class ClientSubscription {
   @ManyToOne(() => CoachPlan)
   coachPlan: CoachPlan;
 
-  @OneToMany(() => Workout, (workout) => workout.clientSubscription)
-  workouts: Workout[];
+  @OneToMany(() => WorkoutInstance, (workoutInstance) => workoutInstance.clientSubscription)
+  workoutInstances: WorkoutInstance[];
 }

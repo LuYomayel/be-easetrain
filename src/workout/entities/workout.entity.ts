@@ -14,62 +14,60 @@ import { Coach, ICoach } from '../../user/entities/coach.entity';
 import { ClientSubscription, IClientSubscription } from '../../subscription/entities/client.subscription.entity';
 export interface IWorkout {
   id: number;
-  clientSubscription?: IClientSubscription;
   coach: ICoach;
   planName: string;
-  date?: Date;
-  isRepetead:boolean;
-  repeatDays: string[];
-  expectedStartDate?: Date;
-  expectedEndDate?: Date;
-  realStartedDate?: Date;
-  realEndDate?: Date;
-  notes?: string;
-  status?: string; // e.g., 'pending', 'completed', 'in-progress'
-  dateAssigned: Date;
-  dateCompleted?: Date;
-  feedback?: string;
-  groups: IExerciseGroup[];
+  workoutInstances: IWorkoutInstance[];
 }
 
-// workout.entity.ts
+// Entidad Workout que actúa como plantilla
 @Entity()
 export class Workout implements IWorkout {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => ClientSubscription, (clientSubscription) => clientSubscription.workouts)
-  clientSubscription?: ClientSubscription;
-
   @ManyToOne(() => Coach, (coach) => coach.id)
   coach: Coach;
-
-  @Column({ default: false })
-  isRepetead: boolean;
-
-  @Column('simple-array', { nullable: true })
-  repeatDays: string[]; // e.g., ['Monday', 'Wednesday', 'Friday']
 
   @Column()
   planName: string;
 
-  @Column({ type: 'date', nullable: true })
-  date?: Date;
+  @OneToMany(() => WorkoutInstance, (workoutInstance) => workoutInstance.workout)
+  workoutInstances: WorkoutInstance[];
+}
 
-  @Column({ type: 'datetime', nullable: true })
-  expectedStartDate: Date;
+export interface IWorkoutInstance {
+  id: number;
+  workout: IWorkout;
+  clientSubscription?: IClientSubscription;
+  personalizedNotes?: string;
+  status?: string;
+  dateAssigned: Date;
+  dateCompleted?: Date;
+  feedback?: string;
+  isRepeated: boolean;
+  isTemplate: boolean;
+  repeatDays: string[];
+  expectedStartDate?: Date;
+  expectedEndDate?: Date;
+  realStartedDate?: Date;
+  realEndDate?: Date;
+  groups: IExerciseGroup[];
+}
 
-  @Column({ type: 'datetime', nullable: true })
-  expectedEndDate: Date;
+// Entidad WorkoutInstance que es específica para cada cliente
+@Entity()
+export class WorkoutInstance implements IWorkoutInstance {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ type: 'datetime', nullable: true })
-  realStartedDate: Date;
+  @ManyToOne(() => Workout, (workout) => workout.workoutInstances)
+  workout: Workout;
 
-  @Column({ type: 'datetime', nullable: true })
-  realEndDate: Date;
+  @ManyToOne(() => ClientSubscription, (clientSubscription) => clientSubscription.workoutInstances)
+  clientSubscription: ClientSubscription;
 
   @Column({ nullable: true })
-  notes?: string;
+  personalizedNotes?: string;
 
   @Column({ nullable: true })
   status?: string;
@@ -83,6 +81,27 @@ export class Workout implements IWorkout {
   @Column({ nullable: true })
   feedback?: string;
 
-  @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workout)
+  @Column({ default: false })
+  isRepeated: boolean;
+
+  @Column({ default: false })
+  isTemplate: boolean;
+
+  @Column('simple-array', { nullable: true })
+  repeatDays: string[]; // e.g., ['Monday', 'Wednesday', 'Friday']
+
+  @Column({ type: 'datetime', nullable: true })
+  expectedStartDate: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  expectedEndDate: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  realStartedDate: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  realEndDate: Date;
+
+  @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance)
   groups: ExerciseGroup[];
 }

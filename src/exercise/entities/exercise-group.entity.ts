@@ -1,4 +1,3 @@
-// exercise-group.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,12 +5,12 @@ import {
   OneToMany,
   ManyToOne,
 } from 'typeorm';
-import { Workout } from '../../workout/entities/workout.entity';
+import { WorkoutInstance, IWorkoutInstance } from '../../workout/entities/workout.entity';
 import { ExerciseInstance, IExerciseInstance } from '../../exercise/entities/exercise.entity';
 
 export interface IExerciseGroup {
-  id: number; 
-  workout: Workout;
+  id: number;
+  workoutInstance: IWorkoutInstance;
   exercises: IExerciseInstance[];
   set: number;
   rest: number;
@@ -26,13 +25,10 @@ export class ExerciseGroup implements IExerciseGroup {
   @Column()
   groupNumber: number;
 
-  @ManyToOne(() => Workout, (workout) => workout.groups)
-  workout: Workout;
+  @ManyToOne(() => WorkoutInstance, (workoutInstance) => workoutInstance.groups)
+  workoutInstance: WorkoutInstance;
 
-  @OneToMany(
-    () => ExerciseInstance,
-    (exerciseInstance) => exerciseInstance.group,
-  )
+  @OneToMany(() => ExerciseInstance, (exerciseInstance) => exerciseInstance.group)
   exercises: ExerciseInstance[];
 
   @Column()
@@ -40,5 +36,4 @@ export class ExerciseGroup implements IExerciseGroup {
 
   @Column()
   rest: number;
-  // Agrega aquí otras propiedades específicas del grupo si las hay
 }

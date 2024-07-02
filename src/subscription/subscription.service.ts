@@ -161,24 +161,33 @@ export class SubscriptionService {
     return await this.clientSubscriptionRepository
       .createQueryBuilder('clientSubscription')
       .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
-      .leftJoinAndSelect('clientSubscription.workouts', 'workout')
+      .leftJoinAndSelect('clientSubscription.workoutInstances', 'workoutInstance')
+      .leftJoinAndSelect('workoutInstance.workout', 'workout')
       .leftJoinAndSelect('clientSubscription.client', 'client')
       .leftJoinAndSelect('client.user', 'user')
       .where('coachPlan.coachId = :coachId', { coachId })
       .getMany();
   }
 
-  async findClientSubscription(clientId: number){
-    console.log(clientId)
+  async findClientSubscription(clientId: number) {
+    console.log(clientId);
     const clientSubscription = await this.clientSubscriptionRepository.findOne({
-      where: { id: clientId } ,
-      relations: ['client', 'client.user', 'workouts' , 'workouts.groups', 'workouts.groups.exercises', 'workouts.groups.exercises.exercise']
+      where:  { id: clientId } ,
+      relations: [
+        'client',
+        'client.user',
+        'workoutInstances',
+        'workoutInstances.workout',
+        'workoutInstances.groups',
+        'workoutInstances.groups.exercises',
+        'workoutInstances.groups.exercises.exercise',
+      ],
     });
-
-    // if (!clientSubscription) {
-    //   throw new Error('Client subscription not found');
-    // }
     console.log(clientSubscription)
+    if (!clientSubscription) {
+      throw new Error('Client subscription not found');
+    }
+    console.log(clientSubscription);
     return clientSubscription;
   }
 
