@@ -39,6 +39,7 @@ export interface IWorkoutInstance {
   id: number;
   workout: IWorkout;
   clientSubscription?: IClientSubscription;
+  instanceName: string;
   personalizedNotes?: string;
   status?: string;
   dateAssigned: Date;
@@ -66,6 +67,9 @@ export class WorkoutInstance implements IWorkoutInstance {
   @ManyToOne(() => ClientSubscription, (clientSubscription) => clientSubscription.workoutInstances)
   clientSubscription: ClientSubscription;
 
+  @Column({ nullable: true })
+  instanceName: string;
+  
   @Column({ nullable: true })
   personalizedNotes?: string;
 

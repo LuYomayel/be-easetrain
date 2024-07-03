@@ -33,16 +33,14 @@ export class SubscriptionService {
   async create(
     createSubscriptionDTO: CreateSubscriptionDTO,
   ): Promise<Subscription> {
-    console.log(createSubscriptionDTO);
     const user = await this.userService.findOne(createSubscriptionDTO.userId);
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
-    console.log('user', user);
+  
     const newSubscription = this.subscriptionRepository.create({
       user,
     });
-    console.log('newSubscription', newSubscription);
     try {
       return await this.subscriptionRepository.save(newSubscription);
     } catch (error) {
@@ -170,7 +168,7 @@ export class SubscriptionService {
   }
 
   async findClientSubscription(clientId: number) {
-    console.log(clientId);
+  
     const clientSubscription = await this.clientSubscriptionRepository.findOne({
       where:  { id: clientId } ,
       relations: [
@@ -183,11 +181,11 @@ export class SubscriptionService {
         'workoutInstances.groups.exercises.exercise',
       ],
     });
-    console.log(clientSubscription)
+
     if (!clientSubscription) {
       throw new Error('Client subscription not found');
     }
-    console.log(clientSubscription);
+
     return clientSubscription;
   }
 

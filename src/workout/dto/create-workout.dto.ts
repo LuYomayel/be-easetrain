@@ -3,11 +3,22 @@ import { IClientSubscription } from 'src/subscription/entities/client.subscripti
 import { IWorkout, IWorkoutInstance } from '../entities/workout.entity';
 
 export class CreateWorkoutDto {
-  planName: string;
-  dayOfWeek?: string;
-  date?: Date;
-  workoutInstances: IWorkoutInstance[];
-  coachId: number;
+  workout: IWorkout;
+
+  isTemplate: boolean;
+  dateAssigned: Date;
+  dateCompleted?: Date;
+  expectedStartDate?: Date;
+  expectedEndDate?: Date;
+  feedback?: string;
+  instanceName: string;
+  personalizedNotes?: string;
+  realStartedDate?: Date;
+  realEndDate?: Date;
+  repeatDays: string[];
+  status?: string;
+  groups: IExerciseGroup[];
+  isRepetead: boolean;
 }
 
 export class AssignWorkoutDto {
@@ -17,4 +28,5 @@ export class AssignWorkoutDto {
   planId: number;
   studentId: number;
   status: string;
+  instanceName: string;
 }

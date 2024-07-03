@@ -3,7 +3,7 @@ import { CreateWorkoutDto } from './create-workout.dto';
 import { IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
 import { ICoach } from 'src/user/entities/coach.entity';
 import { IExerciseGroup } from 'src/exercise/entities/exercise-group.entity';
-import { IWorkoutInstance } from '../entities/workout.entity';
+import { IWorkout, IWorkoutInstance } from '../entities/workout.entity';
 
 export class UpdateWorkoutDto {
   id: number;
@@ -14,11 +14,12 @@ export class UpdateWorkoutDto {
   date?: Date;
   startTime?: string;
   endTime?: string;
-  notes?: string;
+  personalizedNotes?: string;
   status?: string; // e.g., 'pending', 'completed', 'in-progress'
   dateAssigned: Date;
   dateCompleted?: Date;
   feedback?: string;
   groups: IExerciseGroup[];
   workoutInstances: IWorkoutInstance[];
+  workout: IWorkout;
 }

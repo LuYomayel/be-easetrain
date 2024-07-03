@@ -172,7 +172,6 @@ export class UserService {
       email: user.email ? user.email : findUser.email,
       password: hashedPassword,
     };
-    console.log('updatedUser', findUser)
     await this.userRepository.save(updatedUser);
   }
 
@@ -201,7 +200,6 @@ export class UserService {
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email, password: loginDto.password },
     });
-    console.log('usuario o error', user);
     if (!user) {
       throw new HttpException(
         'User or password incorrect',
