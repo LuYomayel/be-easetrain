@@ -12,6 +12,8 @@ import { Coach } from './entities/coach.entity';
 import { Client } from './entities/client.entity';
 import { LoginDto } from './dto/log-in.dto';
 import * as bcrypt from 'bcrypt';
+import { ClientActivity } from './entities/client-activity.entity';
+import { ClientSubscription } from 'src/subscription/entities/client.subscription.entity';
 
 @Injectable()
 export class UserService {
@@ -22,7 +24,11 @@ export class UserService {
     private coachRepository: Repository<Coach>,
     @InjectRepository(Client)
     private clientRepository: Repository<Client>,
-  ) {}
+    @InjectRepository(ClientActivity)
+    private clientActivityRepository: Repository<ClientActivity>,
+    @InjectRepository(ClientSubscription)
+    private clientSubscriptionRepository: Repository<ClientSubscription>
+    ) {}
 
   async findAll(): Promise<User[]> {
     return await this.userRepository.find();
@@ -226,4 +232,41 @@ export class UserService {
     return student;
   }
 
+  async getUserActivities(userId: number): Promise<ClientActivity[]> {
+    return this.clientActivityRepository.find({
+      where: { user: { id: userId } },
+      order: { timestamp: 'DESC' }
+    });
+  }
+  async getUserActivitiesClientId(clientId: number): Promise<ClientActivity[]> {
+    const clientSubscription = await this.clientSubscriptionRepository
+        .createQueryBuilder('clientSubscription')
+        .leftJoinAndSelect('clientSubscription.client', 'client')
+        .leftJoinAndSelect('client.user', 'user')
+        .where('clientSubscription.id = :clientId', { clientId })
+        .getOne();
+    // const user = await this.clientSubscriptionRepository.findOne({ where : { id: clientId }})
+    console.log(clientSubscription)
+    if(!clientSubscription)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+    return this.clientActivityRepository.find({
+      where: { user: { id: clientSubscription.client.user.id } },
+      order: { timestamp: 'DESC' }
+    });
+  }
+
+  async logActivity(userId: number, description: string): Promise<ClientActivity> {
+    const user = await this.userRepository.findOne({where :{ id: userId}});
+    if (user) {
+      const activity = {
+        user: user,
+        description: description,
+        timestamp: new Date(),
+      };
+      const newActivity = this.clientActivityRepository.create(activity);
+      return await this.clientActivityRepository.save(newActivity);
+    } else {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+  }
 }

@@ -3,7 +3,7 @@ import { AssignWorkoutDto, CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Workout, WorkoutInstance } from './entities/workout.entity';
+import { IWorkoutInstance, Workout, WorkoutInstance } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 import { Exercise, ExerciseInstance } from '../exercise/entities/exercise.entity';
@@ -11,6 +11,9 @@ import { ClientSubscription } from '../subscription/entities/client.subscription
 import { Subscription } from 'src/subscription/entities/subscription.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Coach } from 'src/user/entities/coach.entity';
+import { CreateFeedbackDto } from './dto/create-feedback-dto';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { ClientActivity } from 'src/user/entities/client-activity.entity';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -33,15 +36,12 @@ export class WorkoutService {
     private userRepository: Repository<User>,
     @InjectRepository(Coach)
     private coachRepository: Repository<Coach>,
+    @InjectRepository(ClientActivity)
+    private clientActivityRepository: Repository<ClientActivity>
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
     const queryRunner = this.dataSource.createQueryRunner();
-    // console.log(createWorkoutDto.groups[0])
-    // createWorkoutDto.groups.forEach(group => {
-    //   group.exercises.forEach(exercise => console.log(exercise))
-    // })
-    // return
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -51,6 +51,10 @@ export class WorkoutService {
         user: { id: createWorkoutDto.workout.coach.user.id },
       });
       
+      if (!coach) {
+        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+      }
+
       const newWorkout = {
         planName: createWorkoutDto.workout.planName,
         coach,
@@ -112,7 +116,7 @@ export class WorkoutService {
     } catch (error) {
       console.error("Error during transaction:", error);
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException('Error creating workout', HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
@@ -186,7 +190,7 @@ export class WorkoutService {
       });
       
       if (!existingWorkout) {
-        throw new Error('Workout not found');
+        throw new HttpException('Workout not found', HttpStatus.NOT_FOUND);
       }
       // Actualizar la plantilla Workout
       const updatedWorkout = {
@@ -199,8 +203,9 @@ export class WorkoutService {
         where: { id: updateWorkoutDto.id , isTemplate: true },
         relations: ['groups', 'groups.exercises', 'groups.exercises.exercise'],
       });
+
       if (!existingWorkoutInstance) {
-        throw new Error('Template workout instance not found');
+        throw new HttpException('Template workout instance not found', HttpStatus.NOT_FOUND);
       }
   
       // Actualizar la instancia WorkoutInstance
@@ -256,7 +261,7 @@ export class WorkoutService {
       return savedWorkoutInstance;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException('Error updating workout template', HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
@@ -275,7 +280,7 @@ export class WorkoutService {
       });
   
       if (!existingWorkoutInstance) {
-        throw new Error('Workout instance not found');
+        throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND);
       }
   
       // Actualizar la instancia WorkoutInstance
@@ -329,7 +334,7 @@ export class WorkoutService {
       return savedWorkoutInstance;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException('Error updating workout instance', HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
@@ -340,15 +345,13 @@ export class WorkoutService {
       const allWorkouts = await this.workoutRepository
         .createQueryBuilder('workout')
         .leftJoinAndSelect('workout.workoutInstances', 'workoutInstance')
-        // .leftJoinAndSelect('workoutInstance.groups', 'group') // Relacionar con los grupos de la instancia de workout
-        // .leftJoinAndSelect('group.exercises', 'exerciseInstance') // Correctamente aliasado como 'exerciseInstance'
-        // .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
         .getMany();
-  
+      if(allWorkouts.length === 0){
+        throw new HttpException('Workout instances not found', HttpStatus.NOT_FOUND);
+      }
       return allWorkouts;
     } catch (error) {
-      console.error('Error fetching workouts:', error);
-      throw new Error('Error fetching workouts');
+      throw new HttpException('Error finding all workout instances', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -361,7 +364,7 @@ export class WorkoutService {
     });
   
     if (!workout) {
-      throw new Error('Workout does not exist!');
+      throw new HttpException('Workout not found', HttpStatus.NOT_FOUND);
     }
   
     // Buscar la workoutInstance que es plantilla
@@ -371,7 +374,7 @@ export class WorkoutService {
     });
   
     if (!templateInstance) {
-      throw new Error('Template workout instance not found');
+      throw new HttpException('Template workout instance not found', HttpStatus.NOT_FOUND);
     }
   
     // Buscar la suscripción del cliente
@@ -380,7 +383,7 @@ export class WorkoutService {
     });
   
     if (!clientSubscription) {
-      throw new Error('Client subscription not found');
+      throw new HttpException('Client Subsctiption not found', HttpStatus.NOT_FOUND);
     }
   
     // Crear una nueva workoutInstance basada en la plantilla
@@ -438,7 +441,7 @@ export class WorkoutService {
   
     return savedWorkoutInstance;
     } catch (error) {
-      console.log(error)
+      throw new HttpException('Error finding all workout instances', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -446,37 +449,43 @@ export class WorkoutService {
     coachId: number,
     clientId: number,
   ): Promise<Workout[]> {
-    // Paso 1: Obtener la suscripción del cliente
-    const clientSubscription = await this.clientSubscriptionRepository
-      .createQueryBuilder('clientSubscription')
-      .innerJoinAndSelect('clientSubscription.subscription', 'subscription')
-      .innerJoinAndSelect('clientSubscription.client', 'client')
-      .where('client.id = :clientId', { clientId })
-      .getOne();
-    if (!clientSubscription) {
-      // Manejar el caso de que no se encuentre la suscripción, por ejemplo, devolver todos los workouts del coach
-      // o manejar como un error, dependiendo de la lógica de negocio.
-      console.log('No subscription found for client');
-      return [];
+    try {
+       // Paso 1: Obtener la suscripción del cliente
+        const clientSubscription = await this.clientSubscriptionRepository
+        .createQueryBuilder('clientSubscription')
+        .innerJoinAndSelect('clientSubscription.subscription', 'subscription')
+        .innerJoinAndSelect('clientSubscription.client', 'client')
+        .where('client.id = :clientId', { clientId })
+        .getOne();
+      if (!clientSubscription) {
+        throw new HttpException('Client Subsctiption not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Paso 2: Buscar workouts por coachId excluyendo los asociados a la suscripción del cliente
+      const subscriptionId = clientSubscription.subscription.id;
+
+      if(!subscriptionId) 
+        throw new HttpException('subscriptionId not found', HttpStatus.NOT_FOUND);
+
+      const workouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .innerJoinAndSelect('workout.coach', 'coach', 'coach.id = :coachId', {
+          coachId,
+        })
+        .leftJoinAndSelect('workout.groups', 'groups')
+        .leftJoinAndSelect('groups.exercises', 'exercises')
+        .leftJoinAndSelect('exercises.exercise', 'exercise')
+        .where(
+          'workout.subscriptionId != :subscriptionId OR workout.subscriptionId IS NULL',
+          { subscriptionId },
+        )
+        .getMany();
+        
+      return workouts;
+    } catch (error) {
+      throw new HttpException('Error findAllWorkoutsByCoachIdExcludingClientId', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    // Paso 2: Buscar workouts por coachId excluyendo los asociados a la suscripción del cliente
-    const subscriptionId = clientSubscription.subscription.id;
-    const workouts = await this.workoutRepository
-      .createQueryBuilder('workout')
-      .innerJoinAndSelect('workout.coach', 'coach', 'coach.id = :coachId', {
-        coachId,
-      })
-      .leftJoinAndSelect('workout.groups', 'groups')
-      .leftJoinAndSelect('groups.exercises', 'exercises')
-      .leftJoinAndSelect('exercises.exercise', 'exercise')
-      .where(
-        'workout.subscriptionId != :subscriptionId OR workout.subscriptionId IS NULL',
-        { subscriptionId },
-      )
-      .getMany();
-
-    return workouts;
+   
   }
 
   async findAllByClientId(clientId: number): Promise<any> {
@@ -495,7 +504,7 @@ export class WorkoutService {
       return clientWorkouts;
     } catch (error) {
       console.error('Error fetching workouts by client ID:', error);
-      throw new Error('Error fetching workouts for the client');
+      throw new HttpException('Error fetching workouts by client ID', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -515,7 +524,7 @@ export class WorkoutService {
       return userWorkouts;
     } catch (error) {
       console.error('Error fetching workouts by user ID:', error);
-      throw new Error('Error fetching workouts for the user');
+      throw new HttpException('Error fetching workouts by user ID', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -533,7 +542,7 @@ export class WorkoutService {
       return coachWorkouts;
     } catch (error) {
       console.error('Error fetching workouts by coach ID:', error);
-      throw new Error('Error fetching workouts for the coach');
+      throw new HttpException('Error fetching workouts by coach ID', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -550,17 +559,16 @@ export class WorkoutService {
         .andWhere('workout.id = :planId', { planId })
         .getOne();
   
-      if (!workout) {
-        throw new Error('Workout not found');
-      }
+      
       return workout;
     } catch (error) {
       console.error('Error fetching workout details:', error);
-      throw new Error('Error fetching workout details');
+      throw new HttpException('Error fetching one workout by client Id', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
   async findOne(workoutId: number) {
-    const workout = await this.workoutInstanceRepository
+    try {
+      const workout = await this.workoutInstanceRepository
         .createQueryBuilder('workoutInstance')
         .leftJoinAndSelect('workoutInstance.workout', 'workout')
         .leftJoinAndSelect('workoutInstance.groups', 'group')
@@ -571,67 +579,70 @@ export class WorkoutService {
         .getOne();
       
     return workout;
-}
-
-async removeWorkout(instanceId: number) {
-  const queryRunner = this.dataSource.createQueryRunner();
-
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
-
-  try {
-    // Buscar la instancia de workout
-    const templateInstance = await this.workoutInstanceRepository.findOne({
-      where: { id: instanceId },
-      relations: ['workout', 'groups', 'groups.exercises'],
-    });
-
-    if (!templateInstance) {
-      throw new Error('Workout instance not found');
+    } catch (error) {
+      throw new HttpException('Error fetching one workout by workout ID', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    if (!templateInstance.isTemplate) {
-      throw new Error('The provided workout instance is not a template');
-    }
-
-    const workoutPlanId = templateInstance.workout.id;
-
-    // Verificar si existen instancias de WorkoutInstance asignadas a alumnos
-    const assignedInstances = await this.workoutInstanceRepository.find({
-      where: { workout: { id: workoutPlanId }, isTemplate: false },
-    });
-
-    if (assignedInstances.length > 0) {
-      throw new Error('Cannot delete workout plan that has assigned instances');
-    }
-
-    // Eliminar todas las instancias de workout, grupos de ejercicios y instancias de ejercicios
-    const allInstances = await this.workoutInstanceRepository.find({
-      where: { workout: { id: workoutPlanId } },
-      relations: ['groups', 'groups.exercises'],
-    });
-
-    for (const instance of allInstances) {
-      for (const group of instance.groups) {
-        for (const exercise of group.exercises) {
-          await this.exerciseInstanceRepository.delete(exercise.id);
-        }
-        await this.exerciseGroupRepository.delete(group.id);
-      }
-      await this.workoutInstanceRepository.delete(instance.id);
-    }
-
-    // Eliminar el plan de entrenamiento
-    await this.workoutRepository.delete(workoutPlanId);
-
-    await queryRunner.commitTransaction();
-  } catch (error) {
-    await queryRunner.rollbackTransaction();
-    throw error;
-  } finally {
-    await queryRunner.release();
   }
-}
+
+  async removeWorkout(instanceId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Fetch the workout instance
+      const templateInstance = await this.workoutInstanceRepository.findOne({
+        where: { id: instanceId },
+        relations: ['workout', 'groups', 'groups.exercises'],
+      });
+
+      if (!templateInstance) {
+        throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (!templateInstance.isTemplate) {
+        throw new HttpException('The provided workout instance is not a template', HttpStatus.BAD_REQUEST);
+      }
+
+      const workoutPlanId = templateInstance.workout.id;
+
+      // Check if there are any assigned workout instances
+      const assignedInstances = await this.workoutInstanceRepository.find({
+        where: { workout: { id: workoutPlanId }, isTemplate: false },
+      });
+
+      if (assignedInstances.length > 0) {
+        throw new HttpException('Cannot delete workout plan that has assigned instances', HttpStatus.BAD_REQUEST);
+      }
+
+      // Delete all workout instances, exercise groups, and exercise instances
+      const allInstances = await this.workoutInstanceRepository.find({
+        where: { workout: { id: workoutPlanId } },
+        relations: ['groups', 'groups.exercises'],
+      });
+
+      for (const instance of allInstances) {
+        for (const group of instance.groups) {
+          for (const exercise of group.exercises) {
+            await this.exerciseInstanceRepository.delete(exercise.id);
+          }
+          await this.exerciseGroupRepository.delete(group.id);
+        }
+        await this.workoutInstanceRepository.delete(instance.id);
+      }
+
+      // Delete the workout plan
+      await this.workoutRepository.delete(workoutPlanId);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   async removeWorkoutInstance(instanceId: number) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -646,7 +657,7 @@ async removeWorkout(instanceId: number) {
       });
 
       if (!workoutInstance) {
-        throw new Error('Workout instance not found');
+        throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND);
       }
 
       // Eliminar las instancias de ejercicios
@@ -667,10 +678,68 @@ async removeWorkout(instanceId: number) {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(`Error removing workout: ${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
   }
 
+  async submitFeedback(workoutId: number, createFeedbackDto: CreateFeedbackDto): Promise<WorkoutInstance> {
+    try {
+      const workout = await this.findOne(workoutId)
+      if (!workout) {
+        throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND);
+      }
+      // console.log('Workout: ', workout)
+      for (const feedback of createFeedbackDto.exerciseFeedbackArray) {
+        let exerciseFound = false;
+        for (const group of workout.groups) {
+          const exercise = group.exercises.find(ex => ex.id == feedback.exerciseId);
+          group.exercises.forEach(ex => console.log('ex id: ',ex.id, feedback.exerciseId));
+          console.log("exercise: ", exercise)
+          if (exercise) {
+            exercise.completed = feedback.completed;
+            exercise.rpe = feedback.rating;
+            exercise.comments = feedback.comments;
+            await this.exerciseInstanceRepository.save(exercise);
+            exerciseFound = true;
+            break; // Sale del bucle de grupos si se encuentra el ejercicio
+          }
+        }
+        if (!exerciseFound) {
+          throw new HttpException(`Exercise instance with id ${feedback.exerciseId} not found`, HttpStatus.NOT_FOUND);
+        }
+      }
+
+      workout.sessionTime = createFeedbackDto.sessionTime;
+      workout.generalFeedback = createFeedbackDto.generalFeedback;
+      workout.energyLevel = createFeedbackDto.energyLevel;
+      workout.mood = createFeedbackDto.mood;
+      workout.perceivedDifficulty = createFeedbackDto.perceivedDifficulty;
+      workout.additionalNotes = createFeedbackDto.additionalNotes;
+      workout.realEndDate = new Date();
+      workout.status = 'completed';
+      await this.workoutInstanceRepository.save(workout);
+
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.client', 'client')
+        .where('user.id = :userId', { userId: createFeedbackDto.userId })
+        .getOne();
+      if (user) {
+        const activity = {
+          user: user,
+          description: `Completed the workout session ${workout.workout.planName} - ${workout.instanceName || ''} - ${workout.personalizedNotes || ''}`,
+          timestamp: new Date(),
+        }
+        const newActivity = this.clientActivityRepository.create(activity);
+        await this.clientActivityRepository.save(newActivity);
+      }
+
+      return workout;
+    } catch (error) {
+      throw new HttpException(`Error removing workout: ${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+  }
 }

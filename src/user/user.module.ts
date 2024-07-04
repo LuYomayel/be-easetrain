@@ -6,8 +6,10 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { Coach } from './entities/coach.entity';
 import { Client } from './entities/client.entity';
+import { ClientActivity } from './entities/client-activity.entity';
+import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Coach, Client])],
+  imports: [TypeOrmModule.forFeature([User, Coach, Client, ClientActivity, ClientSubscription])],
   providers: [UserService],
   controllers: [UserController],
   exports: [UserService],

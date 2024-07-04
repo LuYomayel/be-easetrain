@@ -89,4 +89,14 @@ export class UserController {
   async getStudentbyId(@Param() id: number) {
     return this.userService.getStudentById(id);
   }
+
+  @Get('userId/activities/:id')
+  async getUserActivities(@Param('id') userId: number) {
+    return this.userService.getUserActivities(userId);
+  }
+
+  @Get('clientId/activities/:id')
+  async getUserActivitiesClientId(@Param('id') userId: number) {
+    return this.userService.getUserActivitiesClientId(userId);
+  }
 }

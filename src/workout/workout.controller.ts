@@ -11,6 +11,7 @@ import {
 import { WorkoutService } from './workout.service';
 import { CreateWorkoutDto, AssignWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
+import { CreateFeedbackDto } from './dto/create-feedback-dto';
 
 @Controller('workout')
 export class WorkoutController {
@@ -42,6 +43,14 @@ export class WorkoutController {
     return this.workoutService.assignWorkout(assignWorkoutDto);
   }
 
+  @Post('/feedback/:id')
+  async submitFeedback(
+    @Param('id') id: number,
+    @Body() createFeedbackDto: CreateFeedbackDto,
+  ) {
+    return this.workoutService.submitFeedback(id, createFeedbackDto);
+  }
+  
   @Get('/coachId/:coachId/clientId/:clientId')
   findAllByCoachIdAndClient(
     @Param('coachId') coachId: string,

@@ -77,6 +77,9 @@ export interface IExerciseInstance {
   difficulty?: string;
   duration?: string;
   distance?: string;
+  completed: boolean;
+  rpe: string;
+  comments: string;
 }
 
 @Entity()
@@ -119,4 +122,13 @@ export class ExerciseInstance implements IExerciseInstance {
 
   @ManyToOne(() => ExerciseGroup, (group) => group.exercises)
   group: ExerciseGroup;
+
+  @Column({ nullable: true })
+  completed: boolean;
+
+  @Column({ nullable: true })
+  rpe: string;
+
+  @Column({ nullable: true })
+  comments: string;
 }

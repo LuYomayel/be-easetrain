@@ -9,6 +9,7 @@ import { ClientSubscription } from '../subscription/entities/client.subscription
 import { Subscription } from '../subscription/entities/subscription.entity';
 import { User } from '../user/entities/user.entity';
 import { Coach } from 'src/user/entities/coach.entity';
+import { ClientActivity } from '../user/entities/client-activity.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -21,6 +22,7 @@ import { Coach } from 'src/user/entities/coach.entity';
       ClientSubscription,
       User,
       Coach,
+      ClientActivity
     ]),
   ],
   controllers: [WorkoutController],

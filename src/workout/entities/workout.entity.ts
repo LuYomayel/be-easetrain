@@ -53,6 +53,12 @@ export interface IWorkoutInstance {
   realStartedDate?: Date;
   realEndDate?: Date;
   groups: IExerciseGroup[];
+  sessionTime: string;
+  generalFeedback: string;
+  energyLevel: number;
+  mood: number;
+  perceivedDifficulty: number;
+  additionalNotes: string;
 }
 
 // Entidad WorkoutInstance que es específica para cada cliente
@@ -108,4 +114,22 @@ export class WorkoutInstance implements IWorkoutInstance {
 
   @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance)
   groups: ExerciseGroup[];
+
+  @Column({ nullable: true })
+  sessionTime: string;
+
+  @Column({ nullable: true })
+  generalFeedback: string;
+
+  @Column({ nullable: true })
+  energyLevel: number;
+
+  @Column({ nullable: true })
+  mood: number;
+
+  @Column({ nullable: true })
+  perceivedDifficulty: number;
+
+  @Column({ nullable: true })
+  additionalNotes: string;
 }
