@@ -41,7 +41,7 @@ export class UserController {
 
   @Get('coach/:id')
   async findCoach(@Param('id') id: number) {
-    return this.userService.findCoach(id);
+    return this.userService.findCoachByUserId(id);
   }
 
   @Get('client/:id')

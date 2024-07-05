@@ -68,8 +68,8 @@ export class WorkoutController {
   }
 
   @Get('/userId/:userId')
-  findAllByUserId(@Param('userId') userId: number) {
-    return this.workoutService.findAllByUserId(userId);
+  findClientWorkoutsByUserId(@Param('userId') userId: number) {
+    return this.workoutService.findClientWorkoutsByUserId(userId);
   }
 
   @Get('/clientId/:clientId/planId/:planId')
@@ -81,8 +81,10 @@ export class WorkoutController {
     return this.workoutService.findAllByCoachId(coachId);
   }
 
-  
-
+  @Get('/coach-workouts/userId/:userId')
+  findAllCoachWorkoutsByUserId(@Param('userId') userId: number) {
+    return this.workoutService.findAllCoachWorkoutsByUserId(userId);
+  }
   @Put('/template/:id')
   updateWorkoutTemplate(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
     return this.workoutService.updateWorkoutTemplate(updateWorkoutDto);

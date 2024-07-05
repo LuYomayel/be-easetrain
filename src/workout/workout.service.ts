@@ -508,7 +508,7 @@ export class WorkoutService {
     }
   }
 
-  async findAllByUserId(userId: number): Promise<any> {
+  async findClientWorkoutsByUserId(userId: number): Promise<any> {
     try {
       const userWorkouts = await this.workoutInstanceRepository
         .createQueryBuilder('workoutInstance')
@@ -539,6 +539,24 @@ export class WorkoutService {
         .where('coach.id = :coachId', { coachId })
         .getMany();
 
+      return coachWorkouts;
+    } catch (error) {
+      console.error('Error fetching workouts by coach ID:', error);
+      throw new HttpException('Error fetching workouts by coach ID', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+  async findAllCoachWorkoutsByUserId(userId: number): Promise<any> {
+    try {
+      const coachWorkouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .innerJoinAndSelect('workout.coach', 'coach')
+        .innerJoinAndSelect('coach.user', 'user')
+        .leftJoinAndSelect('workout.workoutInstances', 'workoutInstance')
+        .leftJoinAndSelect('workoutInstance.groups', 'group')
+        .leftJoinAndSelect('group.exercises', 'exerciseInstance')
+        .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+        .where('user.id = :userId', { userId })
+        .getMany();
       return coachWorkouts;
     } catch (error) {
       console.error('Error fetching workouts by coach ID:', error);
@@ -695,8 +713,6 @@ export class WorkoutService {
         let exerciseFound = false;
         for (const group of workout.groups) {
           const exercise = group.exercises.find(ex => ex.id == feedback.exerciseId);
-          group.exercises.forEach(ex => console.log('ex id: ',ex.id, feedback.exerciseId));
-          console.log("exercise: ", exercise)
           if (exercise) {
             exercise.completed = feedback.completed;
             exercise.rpe = feedback.rating;

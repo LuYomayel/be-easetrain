@@ -14,9 +14,9 @@ import { User } from '../../user/entities/user.entity';
 export interface ISubscription {
   id: number;
   user: User;
-  mealPlans: MealPlan[];
-  schedules: Schedule[];
-  payments: Payment[];
+  mealPlans?: MealPlan[];
+  schedules?: Schedule[];
+  payments?: Payment[];
   isDeleted: boolean;
 }
 
@@ -30,13 +30,13 @@ export class Subscription implements ISubscription {
   user: User;
 
   @OneToMany(() => MealPlan, (mealPlan) => mealPlan.subscription)
-  mealPlans: MealPlan[];
+  mealPlans?: MealPlan[];
 
   @OneToMany(() => Schedule, (schedule) => schedule.subscription)
-  schedules: Schedule[];
+  schedules?: Schedule[];
 
   @OneToMany(() => Payment, (payment) => payment.subscription)
-  payments: Payment[];
+  payments?: Payment[];
 
   @Column({ default: false })
   isDeleted: boolean;

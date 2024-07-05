@@ -52,28 +52,28 @@ export class SubscriptionService {
     }
   }
 
-  async createCoachSubscription(
-    createCoachSubscriptionDTO: CreateCoachSubscriptionDTO,
-  ): Promise<CoachSubscription> {
-    const subscription = await this.subscriptionRepository.findOne({
-      where: { id: createCoachSubscriptionDTO.subscriptionId },
-    });
-    if (!subscription) {
-      throw new HttpException('Subscription not found', HttpStatus.NOT_FOUND);
-    }
-    const coach = await this.userService.findOne(
-      createCoachSubscriptionDTO.coachId,
-    );
-    if (!coach) {
-      throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
-    }
-    const newCoachSubscription = this.coachSubscriptionRepository.create({
-      subscription,
-      coach,
-      tier: createCoachSubscriptionDTO.tier,
-    });
-    return await this.coachSubscriptionRepository.save(newCoachSubscription);
-  }
+  // async createCoachSubscription(
+  //   createCoachSubscriptionDTO: CreateCoachSubscriptionDTO,
+  // ): Promise<CoachSubscription> {
+  //   const subscription = await this.subscriptionRepository.findOne({
+  //     where: { id: createCoachSubscriptionDTO.subscriptionId },
+  //   });
+  //   if (!subscription) {
+  //     throw new HttpException('Subscription not found', HttpStatus.NOT_FOUND);
+  //   }
+  //   const coach = await this.userService.findOne(
+  //     createCoachSubscriptionDTO.coachId,
+  //   );
+  //   if (!coach) {
+  //     throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+  //   }
+  //   const newCoachSubscription = this.coachSubscriptionRepository.create({
+  //     subscription,
+  //     coach,
+  //     tier: createCoachSubscriptionDTO.tier,
+  //   });
+  //   return await this.coachSubscriptionRepository.save(newCoachSubscription);
+  // }
 
   async createCoachPlan(
     createCoachPlanDTO: CreateCoachPlanDTO,
@@ -151,8 +151,8 @@ export class SubscriptionService {
     await this.subscriptionRepository.delete(id);
   }
 
-  async findClientsSubscribedToCoach(coachId: number) {
-    const coach = await this.userService.findCoach(coachId);
+  async findClientsSubscribedToCoachByUserId(userId: number) {
+    const coach = await this.userService.findCoachByUserId(userId);
     if (!coach) {
       throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
     }
@@ -163,7 +163,7 @@ export class SubscriptionService {
       .leftJoinAndSelect('workoutInstance.workout', 'workout')
       .leftJoinAndSelect('clientSubscription.client', 'client')
       .leftJoinAndSelect('client.user', 'user')
-      .where('coachPlan.coachId = :coachId', { coachId })
+      .where('coachPlan.coachId = :coachId', { coachId: coach.id })
       .getMany();
   }
 

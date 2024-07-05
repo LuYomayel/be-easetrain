@@ -13,7 +13,9 @@ import { Client } from './entities/client.entity';
 import { LoginDto } from './dto/log-in.dto';
 import * as bcrypt from 'bcrypt';
 import { ClientActivity } from './entities/client-activity.entity';
-import { ClientSubscription } from 'src/subscription/entities/client.subscription.entity';
+import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
+import { CoachSubscription } from '../subscription/entities/coach.subscription.entity';
+import { Subscription } from '../subscription/entities/subscription.entity'
 
 @Injectable()
 export class UserService {
@@ -27,7 +29,11 @@ export class UserService {
     @InjectRepository(ClientActivity)
     private clientActivityRepository: Repository<ClientActivity>,
     @InjectRepository(ClientSubscription)
-    private clientSubscriptionRepository: Repository<ClientSubscription>
+    private clientSubscriptionRepository: Repository<ClientSubscription>,
+    @InjectRepository(CoachSubscription)
+    private coachSubscriptionRepository: Repository<CoachSubscription>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>
     ) {}
 
   async findAll(): Promise<User[]> {
@@ -42,9 +48,9 @@ export class UserService {
     return await this.userRepository.findOne({ where: { email } });
   }
 
-  async findCoach(id: number): Promise<Coach> {
+  async findCoachByUserId(userId: number): Promise<Coach> {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { id: userId },
     });
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -93,7 +99,7 @@ export class UserService {
     if (findUser) {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
-    if (createUserDto.userType !== 'client' && createUserDto.userType !== 'coach') {
+    if (createUserDto.userType !== EUserType.CLIENT && createUserDto.userType !== EUserType.COACH) {
       throw new HttpException('User type not valid', HttpStatus.BAD_REQUEST);
     }
 
@@ -129,8 +135,20 @@ export class UserService {
       gymLocation: coach.gymLocation,
       name: coach.name,
       trainingType: coach.trainingType,
+      bio: coach.bio,
+      experience: coach.experience,
     });
-    return await this.coachRepository.save(newCoach);
+    const coachSaved = await this.coachRepository.save(newCoach);
+
+    const subscriptionSaved = await this.subscriptionRepository.create({user: user})
+
+    await this.coachSubscriptionRepository.create({
+      subscription: subscriptionSaved,
+      coach: coachSaved,
+      subscriptionPlan: { id: 1 }
+    })
+
+    return coachSaved;
   }
 
   async createClient(client: CreateClientDTO, userId: number): Promise<Client> {
@@ -179,6 +197,22 @@ export class UserService {
       password: hashedPassword,
     };
     await this.userRepository.save(updatedUser);
+  }
+
+  async updatePassword(id: number, hashedPassword: string): Promise<void> {
+    const findUser = await this.userRepository.findOne({
+      where: { id },
+    });
+    if (!findUser) {
+      throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
+    }
+    // Crear un nuevo objeto user con el password encriptado
+    const updatedUser = {
+      ...findUser,
+      password: hashedPassword,
+    };
+    const savedUSer= await this.userRepository.save(updatedUser);
+    console.log('savedUser: ', savedUSer)
   }
 
   async remove(id: number): Promise<string> {
@@ -246,7 +280,6 @@ export class UserService {
         .where('clientSubscription.id = :clientId', { clientId })
         .getOne();
     // const user = await this.clientSubscriptionRepository.findOne({ where : { id: clientId }})
-    console.log(clientSubscription)
     if(!clientSubscription)
       throw new HttpException('User not found', HttpStatus.NOT_FOUND)
     return this.clientActivityRepository.find({
@@ -268,5 +301,28 @@ export class UserService {
     } else {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+  }
+
+  async verifyUser(email:string){
+    const user = await this.userRepository.findOne({where : { email : email }})
+
+    if(!user)
+      throw new HttpException('User not found!', HttpStatus.NOT_FOUND)
+
+    const updateUser = {
+      ...user,
+      isVerified: true
+    }
+
+    await this.userRepository.update(user.id, updateUser)
+  }
+
+  async findByEmail(email:string): Promise<User>{
+    const user = await this.userRepository.findOne({where : { email : email }})
+
+    if(!user)
+      throw new HttpException('User not found!', HttpStatus.NOT_FOUND)
+
+    return user;
   }
 }

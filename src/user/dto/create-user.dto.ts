@@ -1,3 +1,4 @@
+import { ISubcriptionPlan } from 'src/subscription/entities/subscription.plan.entity';
 import { EActivityLevel, EFitnessGoal } from '../entities/client.entity';
 import { ETrainingType } from '../entities/coach.entity';
 import { EUserType } from '../entities/user.entity';
@@ -9,12 +10,14 @@ export class CreateUserDTO {
 }
 
 export class CreateCoachDTO extends CreateUserDTO {
-  idUser: number;
   name: string;
   estimatedClients: number;
   trainingType: ETrainingType[];
   hasGym: boolean;
-  gymLocation: string;
+  gymLocation?: string;
+  bio: string;
+  experience: string;
+  subscriptionPlan: ISubcriptionPlan;
 }
 
 export class CreateClientDTO extends CreateUserDTO {

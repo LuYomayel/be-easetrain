@@ -22,6 +22,8 @@ export interface ICoach {
   hasGym: boolean;
   gymLocation: string | null;
   isDeleted: boolean;
+  bio: string;
+  experience: string;
 }
 
 @Entity()
@@ -35,6 +37,12 @@ export class Coach implements ICoach {
 
   @Column()
   name: string;
+
+  @Column()
+  bio: string;
+  
+  @Column()
+  experience: string;
 
   @Column()
   estimatedClients: number;
@@ -52,4 +60,6 @@ export class Coach implements ICoach {
 
   @Column({ default: false })
   isDeleted: boolean;
+
+
 }

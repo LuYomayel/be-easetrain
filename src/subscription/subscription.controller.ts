@@ -17,15 +17,6 @@ export class SubscriptionController {
     return this.suscriptionService.create(createSuscriptionDto);
   }
 
-  @Post('coach')
-  createCoachSubscription(
-    @Body() createCoachSubscriptionDTO: CreateCoachSubscriptionDTO,
-  ) {
-    return this.suscriptionService.createCoachSubscription(
-      createCoachSubscriptionDTO,
-    );
-  }
-
   @Post('coach/plan')
   createCoachPlan(@Body() createCoachPlanDTO: CreateCoachPlanDTO) {
     return this.suscriptionService.createCoachPlan(createCoachPlanDTO);
@@ -55,9 +46,9 @@ export class SubscriptionController {
     return this.suscriptionService.remove(+id);
   }
 
-  @Get('coach/:id')
+  @Get('coach/userId/:id')
   findCoachSubscriptions(@Param('id') id: number) {
-    return this.suscriptionService.findClientsSubscribedToCoach(id);
+    return this.suscriptionService.findClientsSubscribedToCoachByUserId(id);
   }
 
   @Get('client/:clientId')

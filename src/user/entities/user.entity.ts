@@ -25,6 +25,7 @@ export interface IUser {
   name: string;
   surname: string;
   userType: EUserType;
+  isVerified: boolean;
   coach: Coach;
   client: Client;
   reviews: Review[];
@@ -32,6 +33,7 @@ export interface IUser {
   clientSubscriptions: ClientSubscription[];
   coachSubscriptions: CoachSubscription[];
   subscription: Subscription;
+
 }
 
 @Entity()
@@ -45,11 +47,14 @@ export class User implements IUser {
   @Column()
   password: string;
 
-  @Column()
+  @Column({nullable: true})
   name: string;
 
-  @Column()
+  @Column({nullable:true})
   surname: string;
+
+  @Column({ default: false })
+  isVerified: boolean;
 
   @Column({
     type: 'enum',
