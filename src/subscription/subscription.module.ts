@@ -7,6 +7,7 @@ import { ClientSubscription } from './entities/client.subscription.entity';
 import { Subscription } from './entities/subscription.entity';
 import { UserModule } from 'src/user/user.module';
 import { CoachPlan } from './entities/coach.plan.entity';
+import { SubscriptionPlan } from './entities/subscription.plan.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -14,6 +15,7 @@ import { CoachPlan } from './entities/coach.plan.entity';
       CoachSubscription,
       ClientSubscription,
       CoachPlan,
+      SubscriptionPlan
     ]),
     UserModule,
   ],

@@ -5,4 +5,5 @@ export class CreateExerciseDto {
   exerciseType: string;
   equipmentNeeded: string;
   bodyArea: number[];
+  coachId:number;
 }

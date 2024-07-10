@@ -18,10 +18,8 @@ export class CreateCoachSubscriptionDTO {
 
 export class CreateCoachPlanDTO {
   @IsNumber()
+  @IsNotEmpty()
   coachId: number;
-
-  @IsNumber()
-  subscriptionId: number;
 
   name: string;
 

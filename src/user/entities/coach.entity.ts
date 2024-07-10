@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Client, IClient } from './client.entity';
+import { Exercise, IExercise } from 'src/exercise/entities/exercise.entity';
 
 export enum ETrainingType {
   CROSS_FIT = 'cross fit',
@@ -27,6 +28,7 @@ export interface ICoach {
   bio: string;
   experience: string;
   clients: IClient[];
+  exercises: IExercise[]
 }
 
 @Entity()
@@ -66,4 +68,7 @@ export class Coach implements ICoach {
 
   @OneToMany(() => Client, client => client.coach)
   clients: Client[];
+
+  @OneToMany(() => Exercise, exercise => exercise.coach)
+  exercises: Exercise[]
 }

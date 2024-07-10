@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Put
 } from '@nestjs/common';
 import { ExerciseService } from './exercise.service';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
@@ -20,9 +21,26 @@ export class ExerciseController {
     return this.exerciseService.create(createExerciseDto);
   }
 
+  @Put(':id')
+  update(@Param('id') id: number, @Body() updateExerciseDto: UpdateExerciseDto) {
+    return this.exerciseService.update(id, updateExerciseDto);
+  }
+
+@Delete(':id')
+  remove(@Param('id') id: number) {
+    return this.exerciseService.remove(id);
+  }
+
   @Get()
   findAll() {
     return this.exerciseService.findAll();
+  }
+
+  @Get('coach/:userId')
+  findExercisesByCoachUserId(
+    @Param('userId') userId: number
+  ) {
+    return this.exerciseService.findExercisesByCoachUserId(userId);
   }
 
   @Get('body-area')
@@ -30,21 +48,4 @@ export class ExerciseController {
     return this.exerciseService.findAllWithBodyArea();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.exerciseService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateExerciseDto: UpdateExerciseDto,
-  ) {
-    return this.exerciseService.update(+id, updateExerciseDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.exerciseService.remove(+id);
-  }
 }

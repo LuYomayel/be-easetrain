@@ -65,7 +65,7 @@ export class AuthService {
     } catch (error) {
         console.error('Transaction error:', error);
         await queryRunner.rollbackTransaction();
-        throw new HttpException('Error signing up!', HttpStatus.BAD_REQUEST);
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     } finally {
         await queryRunner.release();
     }
@@ -88,7 +88,7 @@ export class AuthService {
     } catch (error) {
         console.error('Transaction error:', error);
         await queryRunner.rollbackTransaction();
-        throw new HttpException('Error signing up!', HttpStatus.BAD_REQUEST);
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     } finally {
         await queryRunner.release();
     }
@@ -119,7 +119,7 @@ export class AuthService {
     } catch (error) {
         console.error('Transaction error:', error);
         await queryRunner.rollbackTransaction();
-        throw new HttpException('Error signing up!', HttpStatus.BAD_REQUEST);
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     } finally {
         await queryRunner.release();
     }
@@ -139,7 +139,7 @@ export class AuthService {
       user.password = hashedPassword;
       return await this.userService.updatePassword(user.id, hashedPassword);
     } catch (error) {
-      throw new HttpException('Invalid or expired token', HttpStatus.REQUEST_TIMEOUT);
+      throw new HttpException(error.message, HttpStatus.REQUEST_TIMEOUT);
     }
   }
 }

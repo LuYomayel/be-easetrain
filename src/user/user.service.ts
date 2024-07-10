@@ -107,6 +107,10 @@ export class UserService {
     return await this.coachPlanRepository.find({ where : { coach : { user : { id: coachId}}}});
   }
 
+  async findCoachExercises(coachId: number) {
+    return await this.coachRepository.find({ where :  { user : { id: coachId } }, relations: ['exercises'] }  );
+  }
+
   async create(createUserDto: CreateUserDTO): Promise<User> {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -177,13 +181,22 @@ export class UserService {
     });
     const coachSaved = await queryRunner.manager.save(Coach, newCoach);
 
-    const subscriptionSaved = await queryRunner.manager.create(Subscription, {user: user})
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
 
-    await queryRunner.manager.create(CoachSubscription, {
+    const subscription = await queryRunner.manager.create(Subscription, {
+      user: user, 
+      status: EStatus.ACTIVE, 
+      startDate: new Date(), 
+      endDate: endDate
+    })
+    const subscriptionSaved = await queryRunner.manager.save(Subscription, subscription)
+    const coachSubscription = await queryRunner.manager.create(CoachSubscription, {
       subscription: subscriptionSaved,
       coach: coachSaved,
       subscriptionPlan: { id: 1 }
     })
+    await queryRunner.manager.save(CoachSubscription, coachSubscription)
     await queryRunner.commitTransaction();
     return coachSaved;
     } catch (error) {
@@ -279,16 +292,21 @@ export class UserService {
   }
 
   async login(loginDto: LoginDto): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { email: loginDto.email, password: loginDto.password },
-    });
-    if (!user) {
-      throw new HttpException(
-        'User or password incorrect',
-        HttpStatus.NOT_FOUND,
-      );
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email: loginDto.email, password: loginDto.password },
+      });
+      if (!user) {
+        throw new HttpException(
+          'User or password incorrect',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return user;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND)
     }
-    return user;
+    
   }
 
   async getStudentById(id: number) {

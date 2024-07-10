@@ -9,6 +9,7 @@ import {
 import { IExerciseGroup, ExerciseGroup } from './exercise-group.entity';
 import { BodyArea, IBodyArea } from './body-area.entity';
 import { ExerciseBodyArea } from './exercise-body-area.entity';
+import { Coach, ICoach } from '../../user/entities/coach.entity';
 // exercise.interface.ts
 export interface IExercise {
   id: number;
@@ -20,6 +21,9 @@ export interface IExercise {
   isDeleted?: boolean;
   bodyAreas?: IBodyArea[];
   exerciseBodyAreas?: ExerciseBodyArea;
+  createdByCoach?: boolean;
+  createdByAdmin?: boolean;
+  coach?: ICoach;
 }
 
 // exerciseInstance.interface.ts
@@ -61,6 +65,15 @@ export class Exercise implements IExercise {
     (exerciseBodyArea) => exerciseBodyArea.exercise,
   )
   exerciseBodyAreas: ExerciseBodyArea;
+
+  @Column({ default: false })
+  createdByCoach: boolean;
+
+  @Column({ default: true })
+  createdByAdmin: boolean;
+
+  @ManyToOne(() => Coach, (coach) => coach.exercises, { nullable: true })
+  coach: Coach;
 }
 
 export interface IExerciseInstance {

@@ -18,9 +18,22 @@ export class SubscriptionController {
     return this.suscriptionService.create(createSuscriptionDto);
   }
 
-  @Post('coach/plan')
+  @Post('coach/coachPlan')
   createCoachPlan(@Body() createCoachPlanDTO: CreateCoachPlanDTO) {
     return this.suscriptionService.createCoachPlan(createCoachPlanDTO);
+  }
+
+  @Put('coach/coachPlan/:coachPlanId')
+  updateCoachPlan(
+    @Param('coachPlanId') coachPlanId: number,
+    @Body() createCoachPlanDTO: CreateCoachPlanDTO,  
+  ) {
+    return this.suscriptionService.updateCoachPlan(coachPlanId, createCoachPlanDTO);
+  }
+
+  @Delete('coach/coachPlan/:coachPlanId')
+  deleteCoachPlan(@Param('coachPlanId') coachPlanId: number) {
+    return this.suscriptionService.deleteCoachPlan(coachPlanId);
   }
 
   @Post('client')
@@ -35,6 +48,11 @@ export class SubscriptionController {
   @Get()
   findAll() {
     return this.suscriptionService.findAll();
+  }
+
+  @Get('coach-subscription-plans')
+  getAllCoachSubscriptionPlans() {
+    return this.suscriptionService.getAllCoachSubscriptionPlans();
   }
 
   @Get(':id')
@@ -53,8 +71,13 @@ export class SubscriptionController {
   }
 
   @Get('coach/userId/:id')
-  findCoachSubscriptions(@Param('id') id: number) {
+  findCoachClientSubscribers(@Param('id') id: number) {
     return this.suscriptionService.findClientsSubscribedToCoachByUserId(id);
+  }
+
+  @Get('coach/:id')
+  findCoachSubscriptions(@Param('id') id: number) {
+    return this.suscriptionService.findCoachSubscriptions(id);
   }
 
   @Get('client/:clientId')

@@ -40,6 +40,11 @@ export class UserController {
     return this.userService.findCoachPlans(coachId);
   }
 
+  @Get('coach/exercises/:coachId')
+  async findCoachExercises(@Param('coachId') coachId: number) {
+    return this.userService.findCoachExercises(coachId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: number) {
     return this.userService.findOne(id);

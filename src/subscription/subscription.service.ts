@@ -15,6 +15,7 @@ import { UserService } from '../user/user.service';
 import { CoachPlan } from './entities/coach.plan.entity';
 import { DataSource } from 'typeorm';
 import { UpdateSubscriptionDTO } from './dto/update-suscription.dto';
+import { SubscriptionPlan } from './entities/subscription.plan.entity';
 // import { UpdateSubscriptionDTO } from './dto/update-suscription.dto';
 
 @Injectable()
@@ -30,6 +31,8 @@ export class SubscriptionService {
     private userService: UserService,
     @InjectRepository(CoachPlan)
     private coachPlanRepository: Repository<CoachPlan>,
+    @InjectRepository(SubscriptionPlan)
+    private subscriptionPlanRepository: Repository<SubscriptionPlan>,
     private dataSource: DataSource
   ) {}
 
@@ -68,13 +71,7 @@ export class SubscriptionService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const subscription = await this.subscriptionRepository.findOne({
-        where: { id: createCoachPlanDTO.subscriptionId },
-      });
-      if (!subscription) {
-        throw new HttpException('Subscription not found', HttpStatus.NOT_FOUND);
-      }
-      const coach = await this.userService.findOne(createCoachPlanDTO.coachId);
+      const coach = await this.userService.findCoachByUserId(createCoachPlanDTO.coachId);
       if (!coach) {
         throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
       }
@@ -98,6 +95,60 @@ export class SubscriptionService {
     
   }
 
+  async updateCoachPlan(
+    coachPlanId:number,
+    createCoachPlanDTO: CreateCoachPlanDTO,
+  ): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const coachPlan = await this.coachPlanRepository.findOne({where: { id: coachPlanId}})
+      if(!coachPlan)
+        throw new HttpException('Coach plan not found', HttpStatus.NOT_FOUND)
+      const newCoachSubscription = queryRunner.manager.update(CoachPlan, {id: coachPlanId} ,{
+        price: createCoachPlanDTO.price,
+        name: createCoachPlanDTO.name,
+        workoutsPerWeek: createCoachPlanDTO.workoutsPerWeek,
+        includeMealPlan: createCoachPlanDTO.includeMealPlan,
+      });
+
+      await queryRunner.commitTransaction();
+
+    } catch (error) {
+      console.log(error);
+      await  queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
+    }
+    
+  }
+
+  async deleteCoachPlan(
+    coachPlanId: number
+  ): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const clientWithPlan = await this.clientSubscriptionRepository.find({where: { coachPlan: { id: coachPlanId}}})
+      if(clientWithPlan.length)
+        throw new HttpException('There are clients subscribed to this plan', HttpStatus.INTERNAL_SERVER_ERROR)
+      const coachPlanDeleted = await queryRunner.manager.delete(CoachPlan, {id: coachPlanId})
+      
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      console.log(error);
+      await  queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
+    }
+    
+  }
   async createClientSubscription(createClientSubscriptionDTO: CreateClientSubscriptionDTO): Promise<ClientSubscription> {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -182,9 +233,6 @@ export class SubscriptionService {
       if(!clientSubscription)
         throw new HttpException('Client subscription not found', HttpStatus.NOT_FOUND);
 
-      // const removedClientSubscription = await this.clientSubscriptionRepository.delete({id: clientSubscriptionId});
-      // if(removedClientSubscription.affected && removedClientSubscription.affected == 0)
-      //   throw new HttpException('Subscription not deleted. Something wrong happened.', HttpStatus.BAD_REQUEST)
       const subscriptionSaved = await queryRunner.manager.update(Subscription, {id: clientSubscription.subscription.id}, {
         startDate: null,
         endDate: null,
@@ -206,23 +254,44 @@ export class SubscriptionService {
   }
 
   async findClientsSubscribedToCoachByUserId(userId: number) {
-    const coach = await this.userService.findCoachByUserId(userId);
-    if (!coach) {
-      throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+    try {
+      const coach = await this.userService.findCoachByUserId(userId);
+      if (!coach) {
+        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+      }
+      return await this.clientSubscriptionRepository
+        .createQueryBuilder('clientSubscription')
+        .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
+        .leftJoinAndSelect('clientSubscription.workoutInstances', 'workoutInstance')
+        .leftJoinAndSelect('workoutInstance.workout', 'workout')
+        .leftJoinAndSelect('clientSubscription.client', 'client')
+        .leftJoinAndSelect('clientSubscription.subscription', 'subscription')
+        .leftJoinAndSelect('client.user', 'user')
+        .where('coachPlan.coachId = :coachId', { coachId: coach.id })
+        .andWhere('subscription.status = :status', {status: EStatus.ACTIVE})
+        .getMany();
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND)
     }
-    return await this.clientSubscriptionRepository
-      .createQueryBuilder('clientSubscription')
-      .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
-      .leftJoinAndSelect('clientSubscription.workoutInstances', 'workoutInstance')
-      .leftJoinAndSelect('workoutInstance.workout', 'workout')
-      .leftJoinAndSelect('clientSubscription.client', 'client')
-      .leftJoinAndSelect('clientSubscription.subscription', 'subscription')
-      .leftJoinAndSelect('client.user', 'user')
-      .where('coachPlan.coachId = :coachId', { coachId: coach.id })
-      .andWhere('subscription.status = :status', {status: EStatus.ACTIVE})
-      .getMany();
+   
+    
   }
 
+  async findCoachSubscriptions(userId: number) {
+    try {
+      const coach = await this.userService.findCoachByUserId(userId);
+      if (!coach) {
+        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+      }
+      return await this.coachSubscriptionRepository.findOne({where: {coach: {id: coach.id}}, relations: ['subscription', 'subscriptionPlan']})
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND)
+    }
+  }
+
+  async getAllCoachSubscriptionPlans(){
+    return await this.subscriptionPlanRepository.find();
+  }
   async findClientSubscription(clientId: number) {
   
     const clientSubscription = await this.clientSubscriptionRepository.findOne({
