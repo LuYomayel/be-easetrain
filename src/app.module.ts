@@ -13,6 +13,8 @@ import { PaymentModule } from './payment/payment.module';
 import { ExerciseModule } from './exercise/exercise.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailService } from './email/email.service';
+import { JwtModule } from '@nestjs/jwt';
+import { ImportModule } from './import/import.module';
 
 @Module({
   imports: [
@@ -42,7 +44,8 @@ import { EmailService } from './email/email.service';
     ReviewModule,
     PaymentModule,
     ExerciseModule,
-    AuthModule
+    AuthModule,
+    ImportModule
   ],
   controllers: [AppController],
   providers: [AppService, EmailService],

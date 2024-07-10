@@ -22,18 +22,15 @@ export interface IUser {
   id: number;
   email: string;
   password: string;
-  name: string;
-  surname: string;
   userType: EUserType;
   isVerified: boolean;
+  isDeleted: boolean;
   coach: Coach;
   client: Client;
   reviews: Review[];
-  isDeleted: boolean;
   clientSubscriptions: ClientSubscription[];
   coachSubscriptions: CoachSubscription[];
   subscription: Subscription;
-
 }
 
 @Entity()
@@ -46,12 +43,6 @@ export class User implements IUser {
 
   @Column()
   password: string;
-
-  @Column({nullable: true})
-  name: string;
-
-  @Column({nullable:true})
-  surname: string;
 
   @Column({ default: false })
   isVerified: boolean;

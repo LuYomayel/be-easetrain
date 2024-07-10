@@ -9,12 +9,12 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import {
-  CreateClientDTO,
   CreateCoachDTO,
   CreateUserDTO,
 } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { LoginDto } from './dto/log-in.dto';
+import { CreateClientDTO } from './dto/create-client.dto';
 
 @Controller('users')
 export class UserController {
@@ -34,6 +34,12 @@ export class UserController {
   async findCoaches() {
     return this.userService.findCoaches();
   }
+  
+  @Get('coach/coachPlan/:coachId')
+  async findCoachPlans(@Param('coachId') coachId: number) {
+    return this.userService.findCoachPlans(coachId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: number) {
     return this.userService.findOne(id);
@@ -62,12 +68,12 @@ export class UserController {
     return this.userService.createCoach(createCoachDto, id);
   }
 
-  @Post('client/:id')
+  // Coach register a Client
+  @Post('client')
   async createClient(
     @Body() createClientDto: CreateClientDTO,
-    @Param('id') id: number,
   ) {
-    return this.userService.createClient(createClientDto, id);
+    return this.userService.createStudent(createClientDto);
   }
 
   @Put(':id')
@@ -80,6 +86,11 @@ export class UserController {
     return this.userService.remove(id);
   }
 
+  @Delete('/client/:id')
+  async removeClient(@Param('id') id: number) {
+    return this.userService.removeClient(id);
+  }
+
   @Post('login')
   async login(@Body() loginDTO: LoginDto) {
     return this.userService.login(loginDTO);
@@ -88,6 +99,11 @@ export class UserController {
   @Get('coach/student/:id')
   async getStudentbyId(@Param() id: number) {
     return this.userService.getStudentById(id);
+  }
+
+  @Get('coach/allStudents/:id')
+  async getAllStudentsByCoach(@Param() id: number) {
+    return this.userService.getAllStudentsByCoach(id);
   }
 
   @Get('userId/activities/:id')

@@ -4,8 +4,11 @@ import {
   Column,
   OneToOne,
   JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Coach, ICoach } from './coach.entity';
+import { ClientSubscription, IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
 
 export enum EFitnessGoal {
   WEIGHT_LOSS = 'weight loss',
@@ -26,11 +29,13 @@ export interface IClient {
   user: User;
   height: number;
   weight: number;
-  fitnessGoal: EFitnessGoal[];
+  fitnessGoal: string;
   activityLevel: EActivityLevel;
   birthdate?: Date;
   gender?: string;
   isDeleted: boolean;
+  name: string;
+  coach: ICoach;
 }
 
 @Entity()
@@ -43,16 +48,19 @@ export class Client implements IClient {
   user: User;
 
   @Column()
+  name: string;
+
+  @Column()
   height: number;
 
   @Column()
   weight: number;
 
   @Column({
-    type: 'simple-array',
+    // type: 'simple-array',
     nullable: true,
   })
-  fitnessGoal: EFitnessGoal[];
+  fitnessGoal: string;
 
   @Column({
     type: 'enum',
@@ -69,4 +77,7 @@ export class Client implements IClient {
 
   @Column({ default: false })
   isDeleted: boolean;
+
+  @ManyToOne(() => Coach, (coach) => coach.clients)  // Relación Many-to-One
+  coach: Coach;
 }

@@ -10,10 +10,34 @@ import { ClientActivity } from './entities/client-activity.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 import { CoachSubscription } from 'src/subscription/entities/coach.subscription.entity';
 import { Subscription } from '../subscription/entities/subscription.entity';
+import { CoachPlan } from 'src/subscription/entities/coach.plan.entity';
+import { EmailService } from '../email/email.service';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Coach, Client, ClientActivity, ClientSubscription, CoachSubscription, Subscription])],
-  providers: [UserService],
-  controllers: [UserController],
+  imports: [
+    TypeOrmModule.forFeature([
+      User, 
+      Coach, 
+      Client, 
+      ClientActivity, 
+      ClientSubscription, 
+      CoachSubscription, 
+      Subscription, 
+      CoachPlan
+    ]), 
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('SECRET_PWD'),
+        signOptions: { expiresIn: '1h' },
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+  providers: [UserService, EmailService],
   exports: [UserService],
+  controllers: [UserController],
 })
 export class UserModule {}

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import {
   CreateClientSubscriptionDTO,
@@ -6,6 +6,7 @@ import {
   CreateCoachSubscriptionDTO,
   CreateSubscriptionDTO,
 } from './dto/create-suscription.dto';
+import { UpdateSubscriptionDTO } from './dto/update-suscription.dto';
 // import { UpdateSubscriptionDTO } from './dto/update-suscription.dto';
 
 @Controller('subscription')
@@ -46,6 +47,11 @@ export class SubscriptionController {
     return this.suscriptionService.remove(+id);
   }
 
+  @Delete('/clientSubscription/:id')
+  removeClientSubscription(@Param('id') id: string) {
+    return this.suscriptionService.removeClientSubscription(+id);
+  }
+
   @Get('coach/userId/:id')
   findCoachSubscriptions(@Param('id') id: number) {
     return this.suscriptionService.findClientsSubscribedToCoachByUserId(id);
@@ -55,4 +61,12 @@ export class SubscriptionController {
   findClientSubscription(@Param('clientId') clientId: number) {
     return this.suscriptionService.findClientSubscription(clientId);
   }
+
+  @Put('update')
+  async setPayment(
+    @Body() updateSubscriptionDto: UpdateSubscriptionDTO
+  ){
+    return await this.suscriptionService.setPayment(updateSubscriptionDto);
+  }
+  
 }

@@ -1,6 +1,6 @@
 // create-subscription.dto.ts
 
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CreateSubscriptionDTO {
   userId: number;
@@ -33,11 +33,18 @@ export class CreateCoachPlanDTO {
 }
 
 export class CreateClientSubscriptionDTO {
-  subscriptionId: number;
-
+  @IsNumber()
   coachPlanId: number;
 
+  @IsNumber()
+  coachId: number;
+
+  @IsNumber()
   clientId: number;
 
-  coachId: number;
+  @IsDateString()
+  startDate: string;
+
+  @IsDateString()
+  endDate: string;
 }

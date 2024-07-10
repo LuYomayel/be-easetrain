@@ -116,7 +116,7 @@ export class WorkoutService {
     } catch (error) {
       console.error("Error during transaction:", error);
       await queryRunner.rollbackTransaction();
-      throw new HttpException('Error creating workout', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
@@ -261,7 +261,7 @@ export class WorkoutService {
       return savedWorkoutInstance;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new HttpException('Error updating workout template', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
@@ -334,7 +334,7 @@ export class WorkoutService {
       return savedWorkoutInstance;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new HttpException('Error updating workout instance', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
@@ -356,6 +356,10 @@ export class WorkoutService {
   }
 
   async assignWorkout(assignWorkoutDto: AssignWorkoutDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const { planId, studentId, expectedStartDate, expectedEndDate, notes, status, instanceName } = assignWorkoutDto;
   
@@ -387,7 +391,7 @@ export class WorkoutService {
     }
   
     // Crear una nueva workoutInstance basada en la plantilla
-    const newWorkoutInstance = this.workoutInstanceRepository.create({
+    const newWorkoutInstance = await  queryRunner.manager.create(WorkoutInstance, {
       expectedStartDate,
       expectedEndDate,
       personalizedNotes: notes,
@@ -406,21 +410,21 @@ export class WorkoutService {
       instanceName
     });
   
-    const savedWorkoutInstance = await this.workoutInstanceRepository.save(newWorkoutInstance);
+    const savedWorkoutInstance = await queryRunner.manager.save(WorkoutInstance, newWorkoutInstance);
   
     // Copiar grupos y ejercicios
     for (const group of templateInstance.groups) {
-      const newGroup = this.exerciseGroupRepository.create({
+      const newGroup = await queryRunner.manager.create(ExerciseGroup, {
         set: group.set,
         rest: group.rest,
         groupNumber: group.groupNumber,
         workoutInstance: savedWorkoutInstance,
       });
   
-      const savedGroup = await this.exerciseGroupRepository.save(newGroup);
+      const savedGroup = await queryRunner.manager.save(ExerciseGroup, newGroup);
   
       for (const exercise of group.exercises) {
-        const newExercise = this.exerciseInstanceRepository.create({
+        const newExercise = await queryRunner.manager.create(ExerciseInstance, {
           repetitions: exercise.repetitions,
           sets: exercise.sets,
           time: exercise.time,
@@ -435,14 +439,19 @@ export class WorkoutService {
           group: savedGroup,
           // exercise: { id: exercise.exercise.id }
         });
-        await this.exerciseInstanceRepository.save(newExercise);
+        await queryRunner.manager.save(ExerciseInstance, newExercise);
       }
     }
-  
+    await queryRunner.commitTransaction();
     return savedWorkoutInstance;
     } catch (error) {
-      throw new HttpException('Error finding all workout instances', HttpStatus.INTERNAL_SERVER_ERROR);
+      console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
     }
+    
   }
 
   async findAllWorkoutsByCoachIdExcludingClientId(
@@ -650,7 +659,7 @@ export class WorkoutService {
         await this.workoutInstanceRepository.delete(instance.id);
       }
 
-      // Delete the workout plan
+      // Delete the workout planxs
       await this.workoutRepository.delete(workoutPlanId);
 
       await queryRunner.commitTransaction();
@@ -696,13 +705,31 @@ export class WorkoutService {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new HttpException(`Error removing workout: ${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(`Error removing workout: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     } finally {
       await queryRunner.release();
     }
   }
 
   async submitFeedback(workoutId: number, createFeedbackDto: CreateFeedbackDto): Promise<WorkoutInstance> {
+    // const queryRunner = this.dataSource.createQueryRunner();
+
+    // await queryRunner.connect();
+    // await queryRunner.startTransaction();
+    // try {
+      
+    //   await queryRunner.commitTransaction();
+    // } catch (error) {
+    //   console.log(error);
+    //   queryRunner.rollbackTransaction();
+    //   throw new HttpException('Something went wrong', HttpStatus.BAD_REQUEST);
+    // }finally{
+    //   await queryRunner.release();
+    // }
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const workout = await this.findOne(workoutId)
       if (!workout) {
@@ -717,7 +744,7 @@ export class WorkoutService {
             exercise.completed = feedback.completed;
             exercise.rpe = feedback.rating;
             exercise.comments = feedback.comments;
-            await this.exerciseInstanceRepository.save(exercise);
+            await queryRunner.manager.save(ExerciseInstance, exercise);
             exerciseFound = true;
             break; // Sale del bucle de grupos si se encuentra el ejercicio
           }
@@ -735,7 +762,7 @@ export class WorkoutService {
       workout.additionalNotes = createFeedbackDto.additionalNotes;
       workout.realEndDate = new Date();
       workout.status = 'completed';
-      await this.workoutInstanceRepository.save(workout);
+      const workoutSaved = await queryRunner.manager.save(WorkoutInstance, workout);
 
       const user = await this.userRepository
         .createQueryBuilder('user')
@@ -748,14 +775,17 @@ export class WorkoutService {
           description: `Completed the workout session ${workout.workout.planName} - ${workout.instanceName || ''} - ${workout.personalizedNotes || ''}`,
           timestamp: new Date(),
         }
-        const newActivity = this.clientActivityRepository.create(activity);
-        await this.clientActivityRepository.save(newActivity);
+        const newActivity = queryRunner.manager.create(ClientActivity, activity);
+        await queryRunner.manager.save(ClientActivity, newActivity);
       }
-
-      return workout;
+      await queryRunner.commitTransaction();
+      return workoutSaved;
     } catch (error) {
-      throw new HttpException(`Error removing workout: ${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
     }
-    
   }
 }

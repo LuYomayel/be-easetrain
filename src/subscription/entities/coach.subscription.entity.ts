@@ -7,8 +7,16 @@ import {
   ManyToOne
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-import { Subscription } from './subscription.entity';
-import { SubscriptionPlan } from './subscription.plan.entity';
+import { ISubscription, Subscription } from './subscription.entity';
+import { ISubcriptionPlan, SubscriptionPlan } from './subscription.plan.entity';
+import { Coach } from 'src/user/entities/coach.entity';
+
+export interface ICoachSubscription{
+  id:number;
+  subscription: ISubscription;
+  coach: Coach;
+  subscriptionPlan: ISubcriptionPlan;
+}
 @Entity()
 export class CoachSubscription {
   @PrimaryGeneratedColumn()
@@ -18,9 +26,9 @@ export class CoachSubscription {
   @JoinColumn()
   subscription: Subscription;
 
-  @OneToOne(() => User)
+  @OneToOne(() => Coach)
   @JoinColumn()
-  coach: User;
+  coach: Coach;
 
   @ManyToOne(() => SubscriptionPlan)
   @JoinColumn()

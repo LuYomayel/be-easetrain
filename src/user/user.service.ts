@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { EUserType, User } from './entities/user.entity';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import {
-  CreateClientDTO,
   CreateCoachDTO,
   CreateUserDTO,
 } from './dto/create-user.dto';
@@ -15,8 +14,12 @@ import * as bcrypt from 'bcrypt';
 import { ClientActivity } from './entities/client-activity.entity';
 import { ClientSubscription } from '../subscription/entities/client.subscription.entity';
 import { CoachSubscription } from '../subscription/entities/coach.subscription.entity';
-import { Subscription } from '../subscription/entities/subscription.entity'
-
+import { EStatus, Subscription } from '../subscription/entities/subscription.entity'
+import { CreateClientDTO } from './dto/create-client.dto';
+import { CoachPlan } from 'src/subscription/entities/coach.plan.entity';
+import { DataSource } from 'typeorm';
+import { EmailService } from '../email/email.service';
+import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class UserService {
   constructor(
@@ -33,7 +36,12 @@ export class UserService {
     @InjectRepository(CoachSubscription)
     private coachSubscriptionRepository: Repository<CoachSubscription>,
     @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>
+    private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(CoachPlan)
+    private coachPlanRepository: Repository<CoachPlan>,
+    private dataSource: DataSource,
+    private emailService: EmailService,
+    private jwtService: JwtService
     ) {}
 
   async findAll(): Promise<User[]> {
@@ -82,6 +90,11 @@ export class UserService {
     return client;
   }
 
+  async findUserOfClientByClientID(clientId: number){
+    return await this.clientRepository.findOne({ where : { id: clientId }, relations: ['user', 'user.subscription'] });
+    // return await this.clientRepository.findOne({ where : { id: clientId }, relations: ['user', 'user.subscription', 'user.subscription.clientSubscription', 'user.subscription.clientSubscription.workoutInstance'] });
+  }
+
   async findClients(): Promise<Client[]> {
     return await this.clientRepository.find({ relations: ['user'] });
   }
@@ -90,29 +103,53 @@ export class UserService {
     return await this.coachRepository.find({ relations: ['user'] });
   }
 
+  async findCoachPlans(coachId: number) {
+    return await this.coachPlanRepository.find({ where : { coach : { user : { id: coachId}}}});
+  }
+
   async create(createUserDto: CreateUserDTO): Promise<User> {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(createUserDto.password, saltRounds);
-    const findUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email, userType: createUserDto.userType },
-    });
-    if (findUser) {
-      throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
-    }
-    if (createUserDto.userType !== EUserType.CLIENT && createUserDto.userType !== EUserType.COACH) {
-      throw new HttpException('User type not valid', HttpStatus.BAD_REQUEST);
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    const newUser = this.userRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(createUserDto.password, saltRounds);
+      const findUser = await this.userRepository.findOne({
+        where: { email: createUserDto.email, userType: createUserDto.userType },
+      });
+      if (findUser) {
+        throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
+      }
+      if (createUserDto.userType !== EUserType.CLIENT && createUserDto.userType !== EUserType.COACH) {
+        throw new HttpException('User type not valid', HttpStatus.BAD_REQUEST);
+      }
 
-    return this.userRepository.save(newUser);
+      const newUser = queryRunner.manager.create(User,{
+        ...createUserDto,
+        password: hashedPassword,
+      });
+
+      const userSaved = queryRunner.manager.save(User, newUser);
+      await queryRunner.commitTransaction();
+      return userSaved;
+    } catch (error) {
+      console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
+    }
+    
   }
 
   async createCoach(coach: CreateCoachDTO, userId: number): Promise<Coach> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
@@ -128,7 +165,7 @@ export class UserService {
     if (user.userType !== EUserType.COACH) {
       throw new HttpException('User type not valid', HttpStatus.BAD_REQUEST);
     }
-    const newCoach = this.coachRepository.create({
+    const newCoach = queryRunner.manager.create(Coach,{
       user,
       estimatedClients: coach.estimatedClients,
       hasGym: coach.hasGym,
@@ -138,81 +175,86 @@ export class UserService {
       bio: coach.bio,
       experience: coach.experience,
     });
-    const coachSaved = await this.coachRepository.save(newCoach);
+    const coachSaved = await queryRunner.manager.save(Coach, newCoach);
 
-    const subscriptionSaved = await this.subscriptionRepository.create({user: user})
+    const subscriptionSaved = await queryRunner.manager.create(Subscription, {user: user})
 
-    await this.coachSubscriptionRepository.create({
+    await queryRunner.manager.create(CoachSubscription, {
       subscription: subscriptionSaved,
       coach: coachSaved,
       subscriptionPlan: { id: 1 }
     })
-
+    await queryRunner.commitTransaction();
     return coachSaved;
-  }
-
-  async createClient(client: CreateClientDTO, userId: number): Promise<Client> {
-    // I need to create the same user as a client
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    } catch (error) {
+      console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
     }
-    const clientExists = await this.clientRepository.findOne({
-      where: { user: { id: user.id } },
-    });
-    if (clientExists) {
-      throw new HttpException('Client already exists', HttpStatus.BAD_REQUEST);
-    }
-
-    if (user.userType !== EUserType.CLIENT) {
-      throw new HttpException('User type not valid', HttpStatus.BAD_REQUEST);
-    }
-    const formattedBirthdate = new Date(client.birthdate);
-    const newClient = this.clientRepository.create({
-      user,
-      activityLevel: client.activityLevel,
-      birthdate: formattedBirthdate,
-      fitnessGoal: client.fitnessGoal,
-      height: client.height,
-      weight: client.weight,
-      gender: client.gender,
-    });
-    return await this.clientRepository.save(newClient);
   }
 
   async update(id: number, user: UpdateUserDTO): Promise<void> {
-    const findUser = await this.userRepository.findOne({
-      where: { id },
-    });
-    if (!findUser) {
-      throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
-    }
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    // Crear un nuevo objeto user con el password encriptado
-    const updatedUser = {
-      ...findUser,
-      email: user.email ? user.email : findUser.email,
-      password: hashedPassword,
-    };
-    await this.userRepository.save(updatedUser);
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const findUser = await this.userRepository.findOne({
+        where: { id },
+      });
+      if (!findUser) {
+        throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
+      }
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+  
+      // Crear un nuevo objeto user con el password encriptado
+      const updatedUser = {
+        ...findUser,
+        email: user.email ? user.email : findUser.email,
+        password: hashedPassword,
+      };
+      await queryRunner.manager.save(User, updatedUser);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }finally{
+      await queryRunner.release();
+    }
+    
   }
 
   async updatePassword(id: number, hashedPassword: string): Promise<void> {
-    const findUser = await this.userRepository.findOne({
-      where: { id },
-    });
-    if (!findUser) {
-      throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const findUser = await this.userRepository.findOne({
+        where: { id },
+      });
+      if (!findUser) {
+        throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
+      }
+      // Crear un nuevo objeto user con el password encriptado
+      const updatedUser = {
+        ...findUser,
+        password: hashedPassword,
+      };
+      await queryRunner.manager.save(User, updatedUser);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      console.log(error)
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }finally{
+      queryRunner.release();
     }
-    // Crear un nuevo objeto user con el password encriptado
-    const updatedUser = {
-      ...findUser,
-      password: hashedPassword,
-    };
-    const savedUSer= await this.userRepository.save(updatedUser);
-    console.log('savedUser: ', savedUSer)
+    
   }
 
   async remove(id: number): Promise<string> {
@@ -289,40 +331,154 @@ export class UserService {
   }
 
   async logActivity(userId: number, description: string): Promise<ClientActivity> {
-    const user = await this.userRepository.findOne({where :{ id: userId}});
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const user = await this.userRepository.findOne({where :{ id: userId}});
     if (user) {
       const activity = {
         user: user,
         description: description,
         timestamp: new Date(),
       };
-      const newActivity = this.clientActivityRepository.create(activity);
-      return await this.clientActivityRepository.save(newActivity);
+      const newActivity = queryRunner.manager.create(ClientActivity, activity);
+      const activitySaved = await queryRunner.manager.save(ClientActivity, newActivity);
+      queryRunner.commitTransaction();
+      return activitySaved;
     } else {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+    } catch (error) {
+      console.log(error)
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+    
+    } finally{
+      queryRunner.release()
+    }
+    
   }
 
   async verifyUser(email:string){
-    const user = await this.userRepository.findOne({where : { email : email }})
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    if(!user)
-      throw new HttpException('User not found!', HttpStatus.NOT_FOUND)
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const user = await this.userRepository.findOne({where : { email : email }})
 
-    const updateUser = {
-      ...user,
-      isVerified: true
+      if(!user)
+        throw new HttpException('User not found!', HttpStatus.NOT_FOUND)
+
+      const updateUser = {
+        ...user,
+        isVerified: true
+      }
+
+      await queryRunner.manager.update(User, user.id, updateUser)
+      await queryRunner.commitTransaction();
+    } catch (error) {
+        console.error('Transaction error:', error);
+        await queryRunner.rollbackTransaction();
+        throw new HttpException('Error signing up!', HttpStatus.BAD_REQUEST);
+    } finally {
+        await queryRunner.release();
     }
-
-    await this.userRepository.update(user.id, updateUser)
+    
   }
 
   async findByEmail(email:string): Promise<User>{
     const user = await this.userRepository.findOne({where : { email : email }})
-
-    if(!user)
-      throw new HttpException('User not found!', HttpStatus.NOT_FOUND)
-
     return user;
+  }
+
+  async createStudent(createStudentDto: CreateClientDTO): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const { email, name, fitnessGoal, activityLevel, birthdate, gender, height, weight, coachId } = createStudentDto;
+      const coach = await this.findCoachByUserId(coachId);
+      if(!coach)
+        throw new HttpException('Coach not found.', HttpStatus.NOT_FOUND)
+
+      const existUser = await this.findByEmail(email);
+      if(existUser)
+        throw new HttpException('Already exists an user with that email.', HttpStatus.CONFLICT)
+      const hashedPassword = await bcrypt.hash(email, 10);
+      const user = await queryRunner.manager.create(User, { email, password: hashedPassword, userType: EUserType.CLIENT, isVerified: false });
+      const userSaved = await queryRunner.manager.save(User, user);
+      if(!userSaved)
+        throw new HttpException('User not created.', HttpStatus.BAD_REQUEST)
+      const client = await queryRunner.manager.create(Client, { birthdate, gender, height, weight, name, fitnessGoal: fitnessGoal.join(','), activityLevel, user: userSaved, coach  });
+      
+      const clientSaved= await queryRunner.manager.save(Client, client);
+      const subscription = await queryRunner.manager.create(Subscription, {user: userSaved, status: EStatus.INACTIVE})
+      const subscriptionSaved = await queryRunner.manager.save(Subscription, subscription);
+      
+      try {
+        const verificationToken = this.jwtService.sign({ email });
+        await this.emailService.sendVerificationEmail(email, verificationToken);
+      } catch (emailError) {
+        console.error('Error sending verification email:', emailError);
+        throw new HttpException('Error sending verification email', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      console.error('Error creating student: ', error);
+      await queryRunner.rollbackTransaction()
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }{
+      await queryRunner.release();
+    }
+    
+  }
+
+  async getAllStudentsByCoach(userId: any) {
+    try {
+      const students = await this.clientRepository.createQueryBuilder('client')
+            .leftJoinAndSelect('client.user', 'user')
+            .leftJoinAndSelect('client.coach', 'coach')
+            .leftJoinAndSelect('coach.user', 'coachUser')
+            .leftJoinAndSelect('user.subscription', 'subscription')
+            .leftJoinAndSelect('subscription.clientSubscription', 'clientSubscription')
+            .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
+            .where('coachUser.id = :userId', { userId: userId.id })
+            .getMany();
+        return students;
+    } catch (error) {
+        console.log(error);
+        throw new HttpException('Error getting all students by Coach ID', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  async removeClient(clientId: number){
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const client = await this.findUserOfClientByClientID(clientId);
+      if(!client)
+        throw new HttpException('Client could not be found.', HttpStatus.NOT_FOUND)
+      const clientDeleted = await queryRunner.manager.delete(Client, {id: clientId})
+      if(clientDeleted.affected && clientDeleted.affected == 0)
+        throw new HttpException('Client could not be removed.', HttpStatus.NOT_FOUND)
+      await queryRunner.manager.delete(Subscription, {user: { id: client.user.id}})
+      const userDeleted = await queryRunner.manager.delete(User, {id: client.user.id})
+      if(userDeleted.affected && userDeleted.affected == 0 )
+        throw new HttpException('User could not be removed.', HttpStatus.NOT_FOUND)
+        await queryRunner.commitTransaction();
+      return clientDeleted;
+    } catch (error) {
+      console.log(error)
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST, { cause: error})
+    }finally {
+      await queryRunner.release();
+    }
   }
 }

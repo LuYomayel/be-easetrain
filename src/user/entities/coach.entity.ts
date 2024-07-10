@@ -4,8 +4,10 @@ import {
   Column,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Client, IClient } from './client.entity';
 
 export enum ETrainingType {
   CROSS_FIT = 'cross fit',
@@ -24,6 +26,7 @@ export interface ICoach {
   isDeleted: boolean;
   bio: string;
   experience: string;
+  clients: IClient[];
 }
 
 @Entity()
@@ -61,5 +64,6 @@ export class Coach implements ICoach {
   @Column({ default: false })
   isDeleted: boolean;
 
-
+  @OneToMany(() => Client, client => client.coach)
+  clients: Client[];
 }

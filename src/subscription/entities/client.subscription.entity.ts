@@ -5,6 +5,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  Column,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { ISubscription, Subscription } from './subscription.entity';
@@ -24,7 +25,7 @@ export interface IClientSubscription{
 export class ClientSubscription {
   @PrimaryGeneratedColumn()
   id: number;
-
+  
   @OneToOne(() => Subscription)
   @JoinColumn()
   subscription: Subscription;

@@ -20,15 +20,3 @@ export class CreateCoachDTO extends CreateUserDTO {
   subscriptionPlan: ISubcriptionPlan;
 }
 
-export class CreateClientDTO extends CreateUserDTO {
-  idUser: number;
-  coachId: number;
-  fitnessGoal: EFitnessGoal[];
-  activityLevel: EActivityLevel;
-  height: number;
-  weight: number;
-  birthdate: Date;
-  gender: string;
-  // medicalHistory: string;
-  // trainningPreference: string;
-}
