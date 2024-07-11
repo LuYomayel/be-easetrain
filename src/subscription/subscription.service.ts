@@ -182,7 +182,8 @@ export class SubscriptionService {
 
       // Crear la ClientSubscription
       const existClientSubscription = await this.clientSubscriptionRepository.findOne({where: { subscription: { id: updatedSubscription.id}}})
-
+      const formattedStartDate = new Date(startDate).toLocaleDateString('en-GB');
+      const formattedEndDate = new Date(endDate).toLocaleDateString('en-GB');
       if(!existClientSubscription){
         const clientSubscription = await queryRunner.manager.create(ClientSubscription, {
           subscription: updatedSubscription,
@@ -191,6 +192,8 @@ export class SubscriptionService {
         });
         // Guardar la ClientSubscription
         const clientSubscriptionSaved = await queryRunner.manager.save(ClientSubscription, clientSubscription);
+        const description = `A new subscription plan (${coachPlan.name}) was successfully set for the client. Subscription period: ${formattedStartDate} to ${formattedEndDate}.`;
+        await this.userService.logActivity(client.user.id, description)
         await queryRunner.commitTransaction();
         return clientSubscriptionSaved
       }else{
@@ -199,6 +202,8 @@ export class SubscriptionService {
           client,
           coachPlan,
         })
+        const description = `A new subscription plan (${coachPlan.name}) was successfully set for the client. Subscription period: ${formattedStartDate} to ${formattedEndDate}.`;
+        await this.userService.logActivity(client.user.id, description)
         await queryRunner.commitTransaction();
         return await this.clientSubscriptionRepository.findOne({where: { subscription: { id: updatedSubscription.id}}})
       }
@@ -229,7 +234,7 @@ export class SubscriptionService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const clientSubscription = await this.clientSubscriptionRepository.findOne({where: {id:clientSubscriptionId}, relations: ['subscription', 'workoutInstances']})
+      const clientSubscription = await this.clientSubscriptionRepository.findOne({where: {id:clientSubscriptionId}, relations: ['subscription', 'workoutInstances', 'client', 'client.user', 'coachPlan']})
       if(!clientSubscription)
         throw new HttpException('Client subscription not found', HttpStatus.NOT_FOUND);
 
@@ -238,6 +243,9 @@ export class SubscriptionService {
         endDate: null,
         status: EStatus.INACTIVE,
       })
+      const formattedEndDate = new Date().toLocaleDateString('en-GB');
+      const description = `The subscription plan (${clientSubscription.coachPlan.name}) was successfully canceled for the client on ${formattedEndDate}.`;
+      await this.userService.logActivity(clientSubscription.client.user.id, description)
       await queryRunner.commitTransaction();
       return subscriptionSaved;
     } catch (error) {
@@ -283,7 +291,8 @@ export class SubscriptionService {
       if (!coach) {
         throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
       }
-      return await this.coachSubscriptionRepository.findOne({where: {coach: {id: coach.id}}, relations: ['subscription', 'subscriptionPlan']})
+      const coachSubscription = await this.coachSubscriptionRepository.findOne({where: {coach: {id: coach.id}}, relations: ['subscription', 'subscriptionPlan']})
+      return coachSubscription;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND)
     }
@@ -293,10 +302,32 @@ export class SubscriptionService {
     return await this.subscriptionPlanRepository.find();
   }
   async findClientSubscription(clientId: number) {
-  
     const clientSubscription = await this.clientSubscriptionRepository.findOne({
       where:  { id: clientId } ,
       relations: [
+        'client',
+        'client.user',
+        'workoutInstances',
+        'workoutInstances.workout',
+        'workoutInstances.groups',
+        'workoutInstances.groups.exercises',
+        'workoutInstances.groups.exercises.exercise',
+      ],
+    });
+
+    if (!clientSubscription) {
+      throw new Error('Client subscription not found');
+    }
+
+    return clientSubscription;
+  }
+
+  async findClientSubscriptionDetails(userId: number){
+    const clientSubscription = await this.clientSubscriptionRepository.findOne({
+      where:  { client: { user: { id: userId }} } ,
+      relations: [
+        'subscription',
+        'coachPlan',
         'client',
         'client.user',
         'workoutInstances',
@@ -342,6 +373,14 @@ export class SubscriptionService {
       await queryRunner.manager.update(ClientSubscription, { subscription: {id: updatedSubscription.id} }, {
         coachPlan: { id : coachPlanId}
       })
+
+      const coachPlan = await this.coachPlanRepository.findOne({where: { id: coachPlanId}})
+      if(!coachPlan)
+        throw new HttpException('Coach Plan not found', HttpStatus.NOT_FOUND);
+      const formattedStartDate = new Date(startDate).toLocaleDateString('en-GB');
+      const formattedEndDate = new Date(endDate).toLocaleDateString('en-GB');
+      const description = `Monthly payment of subscription plan (ID: ${coachPlan.name}) was successfully processed. Subscription period: ${formattedStartDate} to ${formattedEndDate}.`;
+      await this.userService.logActivity(client.user.id, description)
       await queryRunner.commitTransaction();
       return updatedSubscription;
     } catch (error) {

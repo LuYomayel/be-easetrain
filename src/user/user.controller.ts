@@ -15,6 +15,7 @@ import {
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { LoginDto } from './dto/log-in.dto';
 import { CreateClientDTO } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 
 @Controller('users')
 export class UserController {
@@ -79,6 +80,14 @@ export class UserController {
     @Body() createClientDto: CreateClientDTO,
   ) {
     return this.userService.createStudent(createClientDto);
+  }
+
+  @Put('client/:clientId')
+  async updateClient(
+    @Body() updateClientDto: UpdateClientDto,
+    @Param('clientId') clientId: number
+  ) {
+    return this.userService.updateClient(updateClientDto, clientId);
   }
 
   @Put(':id')

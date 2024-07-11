@@ -32,6 +32,7 @@ export interface IClient {
   fitnessGoal: string;
   activityLevel: EActivityLevel;
   birthdate?: Date;
+  phoneNumber?: number;
   gender?: string;
   isDeleted: boolean;
   name: string;
@@ -55,6 +56,9 @@ export class Client implements IClient {
 
   @Column()
   weight: number;
+
+  @Column()
+  phoneNumber?: number;
 
   @Column({
     // type: 'simple-array',

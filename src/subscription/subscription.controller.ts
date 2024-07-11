@@ -85,6 +85,11 @@ export class SubscriptionController {
     return this.suscriptionService.findClientSubscription(clientId);
   }
 
+  @Get('client-subscription/details/:userId')
+  findClientSubscriptionDetails(@Param('userId') userId: number) {
+    return this.suscriptionService.findClientSubscriptionDetails(userId);
+  }
+
   @Put('update')
   async setPayment(
     @Body() updateSubscriptionDto: UpdateSubscriptionDTO

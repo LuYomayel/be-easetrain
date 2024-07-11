@@ -14,6 +14,7 @@ import { Coach } from 'src/user/entities/coach.entity';
 import { CreateFeedbackDto } from './dto/create-feedback-dto';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { ClientActivity } from 'src/user/entities/client-activity.entity';
+import { UserService } from 'src/user/user.service';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -37,7 +38,8 @@ export class WorkoutService {
     @InjectRepository(Coach)
     private coachRepository: Repository<Coach>,
     @InjectRepository(ClientActivity)
-    private clientActivityRepository: Repository<ClientActivity>
+    private clientActivityRepository: Repository<ClientActivity>,
+    private userService: UserService
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
@@ -384,6 +386,7 @@ export class WorkoutService {
     // Buscar la suscripción del cliente
     const clientSubscription = await this.clientSubscriptionRepository.findOne({
       where: { id: studentId },
+      relations: ['client', 'client.user']
     });
   
     if (!clientSubscription) {
@@ -442,6 +445,7 @@ export class WorkoutService {
         await queryRunner.manager.save(ExerciseInstance, newExercise);
       }
     }
+    await this.userService.logActivity(clientSubscription.client.user.id, `New workout (Workout name: ${workout.planName}) plan assigned.`)
     await queryRunner.commitTransaction();
     return savedWorkoutInstance;
     } catch (error) {
@@ -497,6 +501,27 @@ export class WorkoutService {
    
   }
 
+  async findAllClientWorkoutsByUserId(userId: number): Promise<any> {
+    try {
+      const clientWorkouts = await this.workoutRepository
+        .createQueryBuilder('workout')
+        .leftJoinAndSelect('workout.workoutInstances', 'workoutInstance') // Asume que la relación se llama 'groups' en 'Workout'
+        .innerJoin('workoutInstance.clientSubscription', 'clientSubscription')
+        .innerJoin('clientSubscription.client', 'client')
+        .innerJoin('client.user', 'user')
+        .leftJoinAndSelect('workoutInstance.groups', 'group') // Asume que la relación se llama 'groups' en 'Workout'
+        .leftJoinAndSelect('group.exercises', 'exerciseInstance') // Correctly aliasing as 'exerciseInstance'
+        .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
+        .where('user.id = :userId', { userId })
+        // .andWhere('subscription.isDeleted = false') // Si solo quieres las suscripciones activas
+        .getMany();
+
+      return clientWorkouts;
+    } catch (error) {
+      console.error('Error fetching workouts by client ID:', error);
+      throw new HttpException('Error fetching workouts by client ID', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
   async findAllByClientId(clientId: number): Promise<any> {
     try {
       const clientWorkouts = await this.workoutRepository
@@ -712,20 +737,6 @@ export class WorkoutService {
   }
 
   async submitFeedback(workoutId: number, createFeedbackDto: CreateFeedbackDto): Promise<WorkoutInstance> {
-    // const queryRunner = this.dataSource.createQueryRunner();
-
-    // await queryRunner.connect();
-    // await queryRunner.startTransaction();
-    // try {
-      
-    //   await queryRunner.commitTransaction();
-    // } catch (error) {
-    //   console.log(error);
-    //   queryRunner.rollbackTransaction();
-    //   throw new HttpException('Something went wrong', HttpStatus.BAD_REQUEST);
-    // }finally{
-    //   await queryRunner.release();
-    // }
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();

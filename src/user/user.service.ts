@@ -20,6 +20,7 @@ import { CoachPlan } from 'src/subscription/entities/coach.plan.entity';
 import { DataSource } from 'typeorm';
 import { EmailService } from '../email/email.service';
 import { JwtService } from '@nestjs/jwt';
+import { UpdateClientDto } from './dto/update-client.dto';
 @Injectable()
 export class UserService {
   constructor(
@@ -230,6 +231,9 @@ export class UserService {
         password: hashedPassword,
       };
       await queryRunner.manager.save(User, updatedUser);
+
+      await this.logActivity(findUser.id, 'User changed their password.')
+
       await queryRunner.commitTransaction();
     } catch (error) {
       console.log(error);
@@ -315,7 +319,7 @@ export class UserService {
       .leftJoinAndSelect('client.user', 'user')
       .where('client.id = :id', { id })
       .getOne();
-
+    console.log(student)
     if (!student) {
       throw new HttpException(
         'User or password incorrect',
@@ -349,6 +353,27 @@ export class UserService {
   }
 
   async logActivity(userId: number, description: string): Promise<ClientActivity> {
+    try {
+      const user = await this.userRepository.findOne({where :{ id: userId}});
+    if (user) {
+      const activity = {
+        user: user,
+        description: description,
+        timestamp: new Date(),
+      };
+      const newActivity = this.clientActivityRepository.create(activity);
+      const activitySaved = await this.clientActivityRepository.save(newActivity);
+      return activitySaved;
+    } else {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    } catch (error) {
+      console.log(error)
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+    }
+  }
+
+  async logActivityOrRollback(userId: number, description: string): Promise<ClientActivity> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -455,6 +480,29 @@ export class UserService {
     
   }
 
+  async updateClient(updateClientDto: UpdateClientDto, clientId: number) {
+    const queryRunner = await this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      await queryRunner.manager.update(Client, {id: clientId}, {
+        fitnessGoal: updateClientDto.fitnessGoal.join(', '),
+        activityLevel: updateClientDto.activityLevel,
+        phoneNumber: updateClientDto.phoneNumber
+      })
+      const client = await this.getStudentById(clientId);
+      console.log('USER ACA', client)
+      await this.logActivity(client.user.id, 'Profile details updated.')
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      console.error(error)
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    }finally{
+      await queryRunner.release();
+    }
+  }
   async getAllStudentsByCoach(userId: any) {
     try {
       const students = await this.clientRepository.createQueryBuilder('client')
