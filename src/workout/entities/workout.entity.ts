@@ -12,6 +12,7 @@ import {
 } from '../../exercise/entities/exercise-group.entity';
 import { Coach, ICoach } from '../../user/entities/coach.entity';
 import { ClientSubscription, IClientSubscription } from '../../subscription/entities/client.subscription.entity';
+import { ITrainingSession, TrainingSession } from './training-session.entity';
 export interface IWorkout {
   id: number;
   coach: ICoach;
@@ -59,6 +60,7 @@ export interface IWorkoutInstance {
   mood: number;
   perceivedDifficulty: number;
   additionalNotes: string;
+  trainingSession?: ITrainingSession;
 }
 
 // Entidad WorkoutInstance que es específica para cada cliente
@@ -67,10 +69,10 @@ export class WorkoutInstance implements IWorkoutInstance {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Workout, (workout) => workout.workoutInstances)
+  @ManyToOne(() => Workout, (workout) => workout.workoutInstances, { eager: true })
   workout: Workout;
 
-  @ManyToOne(() => ClientSubscription, (clientSubscription) => clientSubscription.workoutInstances)
+  @ManyToOne(() => ClientSubscription, (clientSubscription) => clientSubscription.workoutInstances, { eager: true })
   clientSubscription: ClientSubscription;
 
   @Column({ nullable: true })
@@ -112,7 +114,7 @@ export class WorkoutInstance implements IWorkoutInstance {
   @Column({ type: 'datetime', nullable: true })
   realEndDate: Date;
 
-  @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance)
+  @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance, { eager: true })
   groups: ExerciseGroup[];
 
   @Column({ nullable: true })
@@ -132,4 +134,7 @@ export class WorkoutInstance implements IWorkoutInstance {
 
   @Column({ nullable: true })
   additionalNotes: string;
+
+  @ManyToOne(() => TrainingSession, trainingSession => trainingSession.workoutInstances, { eager: true })
+  trainingSession: TrainingSession; // Ejemplo: "Entrenamiento del Lunes de la Semana 1 de Julio"
 }

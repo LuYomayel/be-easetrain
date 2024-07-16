@@ -9,6 +9,7 @@ import {
 import { User } from './user.entity';
 import { Client, IClient } from './client.entity';
 import { Exercise, IExercise } from 'src/exercise/entities/exercise.entity';
+import { ITrainingCycle, TrainingCycle } from 'src/workout/entities/training-cycle.entity';
 
 export enum ETrainingType {
   CROSS_FIT = 'cross fit',
@@ -28,7 +29,8 @@ export interface ICoach {
   bio: string;
   experience: string;
   clients: IClient[];
-  exercises: IExercise[]
+  exercises: IExercise[];
+  trainingCycle?: ITrainingCycle[];
 }
 
 @Entity()
@@ -70,5 +72,9 @@ export class Coach implements ICoach {
   clients: Client[];
 
   @OneToMany(() => Exercise, exercise => exercise.coach)
-  exercises: Exercise[]
+  exercises: Exercise[];
+
+  @OneToMany(() => TrainingCycle, trainingCycle => trainingCycle.coach)
+  trainingCycles: TrainingCycle[];
+
 }

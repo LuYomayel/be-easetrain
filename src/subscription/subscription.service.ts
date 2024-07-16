@@ -335,6 +335,8 @@ export class SubscriptionService {
         'workoutInstances.groups',
         'workoutInstances.groups.exercises',
         'workoutInstances.groups.exercises.exercise',
+        'workoutInstances.trainingSession',
+        'workoutInstances.trainingSession.trainingWeek',
       ],
     });
 

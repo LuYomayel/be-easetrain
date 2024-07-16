@@ -91,6 +91,12 @@ export class UserService {
     return client;
   }
 
+  async findClientByClientId(clientId: number): Promise<Client>{
+    const client = await this.clientRepository.findOne({
+      where: {  id: clientId }
+    });
+    return client;
+  }
   async findUserOfClientByClientID(clientId: number){
     return await this.clientRepository.findOne({ where : { id: clientId }, relations: ['user', 'user.subscription'] });
     // return await this.clientRepository.findOne({ where : { id: clientId }, relations: ['user', 'user.subscription', 'user.subscription.clientSubscription', 'user.subscription.clientSubscription.workoutInstance'] });

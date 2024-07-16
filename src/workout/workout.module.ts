@@ -11,6 +11,8 @@ import { User } from '../user/entities/user.entity';
 import { Coach } from 'src/user/entities/coach.entity';
 import { ClientActivity } from '../user/entities/client-activity.entity';
 import { UserModule } from 'src/user/user.module';
+import { TrainingCycle } from './entities/training-cycle.entity';
+import { TrainingSession } from './entities/training-session.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -23,7 +25,9 @@ import { UserModule } from 'src/user/user.module';
       ClientSubscription,
       User,
       Coach,
-      ClientActivity
+      ClientActivity,
+      TrainingCycle,
+      TrainingSession
     ]),
     UserModule
   ],

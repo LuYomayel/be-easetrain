@@ -5,10 +5,12 @@ import {
   OneToOne,
   JoinColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Coach, ICoach } from './coach.entity';
 import { ClientSubscription, IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
+import { ITrainingCycle, TrainingCycle } from 'src/workout/entities/training-cycle.entity';
 
 export enum EFitnessGoal {
   WEIGHT_LOSS = 'weight loss',
@@ -37,6 +39,7 @@ export interface IClient {
   isDeleted: boolean;
   name: string;
   coach: ICoach;
+  trainingCycles?: ITrainingCycle[];
 }
 
 @Entity()
@@ -84,4 +87,7 @@ export class Client implements IClient {
 
   @ManyToOne(() => Coach, (coach) => coach.clients)  // Relación Many-to-One
   coach: Coach;
+
+  @OneToMany(() => TrainingCycle, (trainingCycle) => trainingCycle.client)  // Relación Many-to-One
+  trainingCycles?: TrainingCycle[];
 }

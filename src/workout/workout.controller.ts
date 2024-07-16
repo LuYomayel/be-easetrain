@@ -12,15 +12,11 @@ import { WorkoutService } from './workout.service';
 import { CreateWorkoutDto, AssignWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { CreateFeedbackDto } from './dto/create-feedback-dto';
+import { AssignWorkoutsToCycleDTO, CreateCycleDto } from './entities/create-cycle.dto';
 
 @Controller('workout')
 export class WorkoutController {
   constructor(private readonly workoutService: WorkoutService) {}
-
-  @Post()
-  create(@Body() createWorkoutDto: CreateWorkoutDto) {
-    return this.workoutService.create(createWorkoutDto);
-  }
 
   // @Post('/copy/:planId')
   // copyWorkoutPlan(@Param('planId') planId: number) {
@@ -33,24 +29,26 @@ export class WorkoutController {
     // return this.workoutService.seedDatabase();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.workoutService.findOne(+id);
-  }
-
-  @Post('/assignWorkout')
-  assignWorkout(@Body() assignWorkoutDto: AssignWorkoutDto) {
-    return this.workoutService.assignWorkout(assignWorkoutDto);
-  }
-
-  @Post('/feedback/:id')
-  async submitFeedback(
-    @Param('id') id: number,
-    @Body() createFeedbackDto: CreateFeedbackDto,
+  @Get('workout-instance/:id')
+  findWorkoutInstance(
+    @Param('id') workoutinstanceId: number
   ) {
-    return this.workoutService.submitFeedback(id, createFeedbackDto);
+    return this.workoutService.findOne(workoutinstanceId);
+    // return this.workoutService.seedDatabase();
   }
   
+  @Get('training-cycles/coachId/:coachId')
+  findAllTrainingCyclesByCoach(
+    @Param('coachId') coachId: number
+  ) {
+    return this.workoutService.findAllTrainingCyclesByCoach(coachId);
+  }
+  @Get('training-cycles/clientId/:clientId')
+  findAllTrainingCyclesByClient(
+    @Param('clientId') clientId: number
+  ) {
+    return this.workoutService.findAllTrainingCyclesByStudent(clientId);
+  }
   @Get('/coachId/:coachId/clientId/:clientId')
   findAllByCoachIdAndClient(
     @Param('coachId') coachId: string,
@@ -90,6 +88,44 @@ export class WorkoutController {
   findAllCoachWorkoutsByUserId(@Param('userId') userId: number) {
     return this.workoutService.findAllCoachWorkoutsByUserId(userId);
   }
+
+  @Post()
+  create(@Body() createWorkoutDto: CreateWorkoutDto) {
+    return this.workoutService.create(createWorkoutDto);
+  }
+  @Post('/assignWorkout')
+  assignWorkout(@Body() assignWorkoutDto: AssignWorkoutDto) {
+    return this.workoutService.assignWorkout(assignWorkoutDto);
+  }
+
+  @Post('/feedback/:id')
+  async submitFeedback(
+    @Param('id') id: number,
+    @Body() createFeedbackDto: CreateFeedbackDto,
+  ) {
+    return this.workoutService.submitFeedback(id, createFeedbackDto);
+  }
+  
+  @Post('/training-cycles')
+  async createTrainingCycle(@Body() createCycleDto: CreateCycleDto)
+  {
+    return this.workoutService.createTrainingCycle(createCycleDto)
+  }
+  @Post('assign-session/:sessionId')
+  assignWorkoutToSession(
+    @Param('sessionId') sessionId: number,
+    @Body('workoutId') workoutId: number,
+    @Body('clientId') clientId: number,
+  ) {
+    console.log(workoutId,clientId)
+    return this.workoutService.assignWorkoutToSession(sessionId, workoutId, clientId);
+  }
+
+  @Post('assign-cycle/:id/assign-workouts/:clientId')
+  async assignWorkoutsToCycle(@Param('id') id: number, @Body() assignWorkoutsToCycleDTO: AssignWorkoutsToCycleDTO, @Param('clientId') clientId: number) {
+    return this.workoutService.assignWorkoutsToCycle(id, assignWorkoutsToCycleDTO, clientId);
+  }
+
   @Put('/template/:id')
   updateWorkoutTemplate(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
     return this.workoutService.updateWorkoutTemplate(updateWorkoutDto);
