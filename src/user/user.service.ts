@@ -68,9 +68,6 @@ export class UserService {
       where: { user: { id: user.id } },
       relations: ['user'],
     });
-    if (!coach) {
-      throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
-    }
     return coach;
   }
 
@@ -85,9 +82,6 @@ export class UserService {
       where: { user: { id: user.id } },
       relations: ['user'],
     });
-    if (!client) {
-      throw new HttpException('Client not found', HttpStatus.NOT_FOUND);
-    }
     return client;
   }
 
