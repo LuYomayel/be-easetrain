@@ -323,28 +323,34 @@ export class SubscriptionService {
   }
 
   async findClientSubscriptionDetails(userId: number){
-    const clientSubscription = await this.clientSubscriptionRepository.findOne({
-      where:  { client: { user: { id: userId }} } ,
-      relations: [
-        'subscription',
-        'coachPlan',
-        'client',
-        'client.user',
-        'workoutInstances',
-        'workoutInstances.workout',
-        'workoutInstances.groups',
-        'workoutInstances.groups.exercises',
-        'workoutInstances.groups.exercises.exercise',
-        'workoutInstances.trainingSession',
-        'workoutInstances.trainingSession.trainingWeek',
-      ],
-    });
-
-    if (!clientSubscription) {
-      throw new Error('Client subscription not found');
+    try {
+      const clientSubscription = await this.clientSubscriptionRepository.findOne({
+        where:  { client: { user: { id: userId }} } ,
+        relations: [
+          'subscription',
+          'coachPlan',
+          'client',
+          'client.user',
+          'workoutInstances',
+          'workoutInstances.workout',
+          'workoutInstances.groups',
+          'workoutInstances.groups.exercises',
+          'workoutInstances.groups.exercises.exercise',
+          'workoutInstances.trainingSession',
+          'workoutInstances.trainingSession.trainingWeek',
+        ],
+      });
+  
+      if (!clientSubscription) {
+        throw new Error('Client subscription not found');
+      }
+  
+      return clientSubscription;
+    } catch (error) {
+      console.log(error)
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
     }
-
-    return clientSubscription;
+    
   }
 
   async setPayment( updateSubscriptionDto: UpdateSubscriptionDTO){
