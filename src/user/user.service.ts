@@ -509,7 +509,7 @@ export class UserService {
             .leftJoinAndSelect('client.user', 'user')
             .leftJoinAndSelect('client.coach', 'coach')
             .leftJoinAndSelect('coach.user', 'coachUser')
-            .leftJoinAndSelect('user.subscription', 'subscription')
+            .innerJoinAndSelect('user.subscription', 'subscription')
             .leftJoinAndSelect('subscription.clientSubscription', 'clientSubscription')
             .leftJoinAndSelect('clientSubscription.coachPlan', 'coachPlan')
             .where('coachUser.id = :userId', { userId: userId.id })
