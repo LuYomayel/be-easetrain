@@ -60,7 +60,7 @@ export class Client implements IClient {
   @Column()
   weight: number;
 
-  @Column()
+  @Column({nullable: true})
   phoneNumber?: number;
 
   @Column({
