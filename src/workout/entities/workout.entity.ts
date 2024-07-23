@@ -118,7 +118,7 @@ export class WorkoutInstance implements IWorkoutInstance {
   @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance, { eager: true })
   groups: ExerciseGroup[];
 
-  @Column({ type: 'time' })
+  @Column({ type: 'time', nullable: true })
   sessionTime: Date;
 
   @Column({ nullable: true })
