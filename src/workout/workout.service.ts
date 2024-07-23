@@ -779,11 +779,14 @@ export class WorkoutService {
       const clientWorkoutInstances = await this.workoutInstanceRepository
         .createQueryBuilder('workoutInstance')
         .innerJoin('workoutInstance.clientSubscription', 'clientSubscription')
+        .leftJoinAndSelect('workoutInstance.trainingSession', 'trainingSession')
+        .leftJoinAndSelect('trainingSession.trainingWeek', 'trainingWeek')
         .innerJoin('clientSubscription.client', 'client')
         .leftJoinAndSelect('workoutInstance.groups', 'group')
         .leftJoinAndSelect('group.exercises', 'exerciseInstance')
         .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
         .leftJoinAndSelect('exerciseInstance.setLogs', 'setLog') // Include setLogs
+
         .where('client.id = :clientId', { clientId })
         .getMany();
   
