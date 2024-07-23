@@ -10,6 +10,7 @@ import { IExerciseGroup, ExerciseGroup } from './exercise-group.entity';
 import { BodyArea, IBodyArea } from './body-area.entity';
 import { ExerciseBodyArea } from './exercise-body-area.entity';
 import { Coach, ICoach } from '../../user/entities/coach.entity';
+import { ExerciseSetLog, IExerciseSetLog } from './exercise-set-log.entity';
 // exercise.interface.ts
 export interface IExercise {
   id: number;
@@ -90,9 +91,10 @@ export interface IExerciseInstance {
   difficulty?: string;
   duration?: string;
   distance?: string;
-  completed: boolean;
-  rpe: string;
-  comments: string;
+  completed?: boolean;
+  rpe?: string;
+  comments?: string;
+  setLogs?: IExerciseSetLog[];
 }
 
 @Entity()
@@ -137,11 +139,14 @@ export class ExerciseInstance implements IExerciseInstance {
   group: ExerciseGroup;
 
   @Column({ nullable: true })
-  completed: boolean;
+  completed?: boolean;
 
   @Column({ nullable: true })
-  rpe: string;
+  rpe?: string;
 
   @Column({ nullable: true })
-  comments: string;
+  comments?: string;
+
+  @OneToMany(() => ExerciseSetLog, setLog => setLog.exerciseInstance, { eager: true })
+  setLogs: ExerciseSetLog[];
 }

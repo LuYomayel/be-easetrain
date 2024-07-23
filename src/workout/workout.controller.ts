@@ -105,6 +105,13 @@ export class WorkoutController {
   ) {
     return this.workoutService.submitFeedback(id, createFeedbackDto);
   }
+
+  @Get('/feedback/:sessionId')
+  async getFeedback(
+    @Param('sessionId') sessionId: number,
+  ) {
+    return this.workoutService.getWorkoutInstanceWithFeedback(sessionId);
+  }
   
   @Post('/training-cycles')
   async createTrainingCycle(@Body() createCycleDto: CreateCycleDto)

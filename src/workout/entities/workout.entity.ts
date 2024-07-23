@@ -5,7 +5,6 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { Subscription } from '../../subscription/entities/subscription.entity';
 import {
   IExerciseGroup,
   ExerciseGroup,
@@ -13,6 +12,7 @@ import {
 import { Coach, ICoach } from '../../user/entities/coach.entity';
 import { ClientSubscription, IClientSubscription } from '../../subscription/entities/client.subscription.entity';
 import { ITrainingSession, TrainingSession } from './training-session.entity';
+import { ExerciseSetLog } from '../../exercise/entities/exercise-set-log.entity';
 export interface IWorkout {
   id: number;
   coach: ICoach;
@@ -54,13 +54,14 @@ export interface IWorkoutInstance {
   realStartedDate?: Date;
   realEndDate?: Date;
   groups: IExerciseGroup[];
-  sessionTime: string;
+  sessionTime: Date;
   generalFeedback: string;
   energyLevel: number;
   mood: number;
   perceivedDifficulty: number;
   additionalNotes: string;
   trainingSession?: ITrainingSession;
+  setLogs?: ExerciseSetLog[];
 }
 
 // Entidad WorkoutInstance que es específica para cada cliente
@@ -117,8 +118,8 @@ export class WorkoutInstance implements IWorkoutInstance {
   @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance, { eager: true })
   groups: ExerciseGroup[];
 
-  @Column({ nullable: true })
-  sessionTime: string;
+  @Column({ type: 'time' })
+  sessionTime: Date;
 
   @Column({ nullable: true })
   generalFeedback: string;
@@ -137,4 +138,7 @@ export class WorkoutInstance implements IWorkoutInstance {
 
   @ManyToOne(() => TrainingSession, trainingSession => trainingSession.workoutInstances, { eager: true })
   trainingSession: TrainingSession; // Ejemplo: "Entrenamiento del Lunes de la Semana 1 de Julio"
+
+  @OneToMany(() => ExerciseSetLog, setLog => setLog.workoutInstance)
+  setLogs: ExerciseSetLog[];
 }

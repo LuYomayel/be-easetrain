@@ -8,7 +8,7 @@ export class CreateFeedbackDto {
   userId: number;
 
   @IsString()
-  sessionTime: string;
+  sessionTime: Date;
 
   @IsString()
   @IsOptional()
@@ -35,6 +35,9 @@ class ExerciseFeedbackDto {
   @IsNumber()
   exerciseId: number;
 
+  @IsArray()
+  sets: ExerciseSetDto[];
+
   @IsString()
   @IsOptional()
   rating: string;
@@ -49,4 +52,42 @@ class ExerciseFeedbackDto {
 
   @IsNumber()
   userId: number;
+}
+
+class ExerciseSetDto {
+  @IsString()
+  @IsOptional()
+  repetitions: string;
+
+  @IsString()
+  @IsOptional()
+  weight: string;
+
+  @IsString()
+  @IsOptional()
+  time: string;
+
+  @IsString()
+  @IsOptional()
+  distance: string;
+
+  @IsString()
+  @IsOptional()
+  tempo: string;
+
+  @IsString()
+  @IsOptional()
+  notes: string;
+
+  @IsString()
+  @IsOptional()
+  difficulty: string;
+
+  @IsString()
+  @IsOptional()
+  duration: string;
+
+  @IsString()
+  @IsOptional()
+  restInterval: string;
 }
