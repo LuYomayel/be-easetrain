@@ -1,12 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
-import { Exercise } from './entities/exercise.entity';
+import { Exercise, IExercise } from './entities/exercise.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { BodyArea } from './entities/body-area.entity';
 import { ExerciseBodyArea } from './entities/exercise-body-area.entity';
 import { UserService } from 'src/user/user.service';
+import * as XLSX from 'xlsx';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -149,5 +150,63 @@ export class ExerciseService {
   findAllWithBodyArea() {
     const bodyAreas = this.bodyAreaRepository.find();
     return bodyAreas;
+  }
+
+  private isValidYouTubeUrl(url: string): boolean {
+    const regex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/i;
+    // console.log(regex.test(url), url);
+    return regex.test(url);
+  }
+
+  async importExercises(fileBuffer: Buffer, coachId: number): Promise<any> {
+    try {
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const exercises: IExercise[] = XLSX.utils.sheet_to_json(worksheet);
+      
+      const validExercises = exercises.filter(exercise => {
+        return this.isValidYouTubeUrl(exercise.multimedia);
+      });
+
+      const duplicateExercises = [];
+      let rowIndex = 1;
+
+      for (const exercise of validExercises) {
+        const existingExercise = await this.exerciseRepository.findOne({
+          where: { name: exercise.name, coach: { id: coachId }, createdByCoach: true },
+        });
+
+        if (existingExercise) {
+          duplicateExercises.push({ exercise, rowIndex });
+        } else {
+          const newExercise = this.exerciseRepository.create({
+            name: exercise.name,
+            description: exercise.description,
+            multimedia: exercise.multimedia,
+            exerciseType: exercise.exerciseType,
+            equipmentNeeded: exercise.equipmentNeeded,
+            createdByCoach: true,
+            createdByAdmin: false,
+            coach: {id: coachId},
+          });
+
+          await this.exerciseRepository.save(newExercise);
+        }
+
+        rowIndex++;
+      }
+
+      return { 
+        message: 'Exercises imported successfully', 
+        duplicateExercises: duplicateExercises.map(de => ({
+          name: de.exercise.name,
+          row: de.rowIndex
+        })),
+        duplicatesCount: duplicateExercises.length
+      };
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

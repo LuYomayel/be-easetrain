@@ -3,11 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
-  Put
-} from '@nestjs/common';
+  UseInterceptors, UploadedFile, Req } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ExerciseService } from './exercise.service';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
@@ -46,6 +46,13 @@ export class ExerciseController {
   @Get('body-area')
   findAllWithBodyArea() {
     return this.exerciseService.findAllWithBodyArea();
+  }
+
+  @Post('import/:id')
+  @UseInterceptors(FileInterceptor('file'))
+  async importExercises(@UploadedFile() file: Express.Multer.File, @Param('id') coachId: number) {
+    // console.log('dasdas estoy aca', file)
+    return await this.exerciseService.importExercises(file.buffer, coachId);
   }
 
 }
