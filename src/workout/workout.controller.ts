@@ -43,12 +43,19 @@ export class WorkoutController {
   ) {
     return this.workoutService.findAllTrainingCyclesByCoach(coachId);
   }
-  @Get('training-cycles/clientId/:clientId')
-  findAllTrainingCyclesByClient(
+  @Get('training-cycles/client/userId/:userId')
+  findAllTrainingCyclesForClientByUserId(
+    @Param('userId') userId: number
+  ) {
+    return this.workoutService.findAllTrainingCyclesForClientByUserId(userId);
+  }
+  @Get('training-cycles/client/clientId/:clientId')
+  findAllTrainingCyclesForClientByClientId(
     @Param('clientId') clientId: number
   ) {
-    return this.workoutService.findAllTrainingCyclesByStudent(clientId);
+    return this.workoutService.findAllTrainingCyclesForClientByClientId(clientId);
   }
+
   @Get('/coachId/:coachId/clientId/:clientId')
   findAllByCoachIdAndClient(
     @Param('coachId') coachId: string,

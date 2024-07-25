@@ -13,7 +13,6 @@ export class CreateClientDTO {
 
   activityLevel: EActivityLevel;
 
-  @IsDate()
   birthdate: Date;
 
   @IsString()

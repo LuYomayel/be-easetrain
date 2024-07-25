@@ -169,6 +169,7 @@ export class ExerciseService {
       });
 
       const duplicateExercises = [];
+      const registeredExercises = [];
       let rowIndex = 1;
 
       for (const exercise of validExercises) {
@@ -189,7 +190,7 @@ export class ExerciseService {
             createdByAdmin: false,
             coach: {id: coachId},
           });
-
+          registeredExercises.push({ exercise, rowIndex });
           await this.exerciseRepository.save(newExercise);
         }
 
@@ -197,12 +198,17 @@ export class ExerciseService {
       }
 
       return { 
-        message: 'Exercises imported successfully', 
+        message: 'Exercises imported successfully',
+        registeredExercises: registeredExercises.map(de => ({
+          name: de.exercise.name,
+          row: de.rowIndex
+        })),
         duplicateExercises: duplicateExercises.map(de => ({
           name: de.exercise.name,
           row: de.rowIndex
         })),
-        duplicatesCount: duplicateExercises.length
+        duplicatesCount: duplicateExercises.length,
+        registeredExercisesCount: registeredExercises.length
       };
     } catch (error) {
       console.log(error);

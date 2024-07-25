@@ -327,8 +327,8 @@ export class WorkoutService {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
-  async findAllTrainingCyclesByStudent(studentId: number) {
+  
+  async findAllTrainingCyclesForClientByUserId(studentId: number) {
     try {
       const allTrainingCycles = await this.trainingCycleRepository.find({
         relations: [
@@ -338,6 +338,23 @@ export class WorkoutService {
           'trainingWeeks.trainingSessions.workoutInstances', 
           'trainingWeeks.trainingSessions.workoutInstances.workout'],
         where: { client: { user: { id: studentId } } }
+      });
+      return allTrainingCycles;
+    } catch (error) {
+      console.error(error);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+  async findAllTrainingCyclesForClientByClientId(studentId: number) {
+    try {
+      const allTrainingCycles = await this.trainingCycleRepository.find({
+        relations: [
+          'client',
+          'trainingWeeks', 
+          'trainingWeeks.trainingSessions', 
+          'trainingWeeks.trainingSessions.workoutInstances', 
+          'trainingWeeks.trainingSessions.workoutInstances.workout'],
+        where: { client: { id: studentId } }
       });
       return allTrainingCycles;
     } catch (error) {
