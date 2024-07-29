@@ -1,11 +1,10 @@
-// update-subscription.dto.ts
-
-import { IsNumber, IsBoolean, IsOptional, IsDate, IsNotEmpty, isNumber, isNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNumber, IsBoolean, IsOptional, IsDate, IsNotEmpty } from 'class-validator';
 
 export class UpdateSubscriptionDTO {
   @IsNumber()
   @IsNotEmpty()
-  coachId:number;
+  coachId: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -13,14 +12,17 @@ export class UpdateSubscriptionDTO {
 
   @IsDate()
   @IsNotEmpty()
+  @Type(() => Date)
   startDate: Date;
-  
+
   @IsDate()
   @IsNotEmpty()
+  @Type(() => Date)
   endDate: Date;
-  
+
   @IsDate()
   @IsNotEmpty()
+  @Type(() => Date)
   paymentDate: Date;
 
   @IsNumber()

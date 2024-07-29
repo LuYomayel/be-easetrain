@@ -71,6 +71,9 @@ export class WorkoutService {
       if (!coach) {
         throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
       }
+      const sameNameWorkout = await this.workoutRepository.findOne({where: {planName: createWorkoutDto.workout.planName}})
+      if(sameNameWorkout)
+        throw new HttpException('Already exists a workout with that name.', HttpStatus.BAD_REQUEST);
 
       const newWorkout = {
         planName: createWorkoutDto.workout.planName,
@@ -86,6 +89,7 @@ export class WorkoutService {
         personalizedNotes: createWorkoutDto.personalizedNotes,
         status: 'pending',
         isTemplate: true,
+        groups: []
       };
 
       
@@ -95,7 +99,7 @@ export class WorkoutService {
       );
       const savedWorkoutInstance = await queryRunner.manager.save(
         workoutInstance,
-      );
+        );
       // Crear y asociar los grupos de ejercicios a la instancia de WorkoutInstance
       for (const groupDto of createWorkoutDto.groups) {
         const exerciseGroup = queryRunner.manager.create(ExerciseGroup, {
@@ -892,6 +896,7 @@ export class WorkoutService {
         .where('workoutInstance.id = :workoutId', { workoutId })
         // .andWhere('exerciseInstance.exerciseId is not NULL')
         .getOne();
+        console.log('WORKOUT: ', workout)
     return workout;
     } catch (error) {
       throw new HttpException('Error fetching one workout by workout ID', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -967,7 +972,7 @@ export class WorkoutService {
     try {
       const workoutInstance = await this.workoutInstanceRepository.findOne({
         where: { id: instanceId, isTemplate: false },
-        relations: ['groups', 'groups.exercises'],
+        relations: ['groups', 'groups.exercises', 'trainingSession'],
       });
 
       if (!workoutInstance) {

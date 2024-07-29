@@ -143,7 +143,7 @@ export class UserService {
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }finally{
-      await queryRunner.release();
+      // await queryRunner.release();
     }
     
   }
@@ -205,7 +205,7 @@ export class UserService {
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }finally{
-      await queryRunner.release();
+      // await queryRunner.release();
     }
   }
 
@@ -223,16 +223,17 @@ export class UserService {
       }
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(user.password, saltRounds);
-  
+      console.log('Hola')
       // Crear un nuevo objeto user con el password encriptado
       const updatedUser = {
         ...findUser,
         email: user.email ? user.email : findUser.email,
         password: hashedPassword,
       };
-      await queryRunner.manager.save(User, updatedUser);
-
-      await this.logActivity(findUser.id, 'User changed their password.')
+      const ususarioAct= await queryRunner.manager.save(User, updatedUser);
+      console.log('Hola2:', ususarioAct)
+      const actividadGuardada = await this.logActivity(findUser.id, 'User changed their password.')
+      console.log('ACtiidad guardada: ', actividadGuardada)
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -240,7 +241,7 @@ export class UserService {
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }finally{
-      await queryRunner.release();
+      // await queryRunner.release();
     }
     
   }
@@ -269,13 +270,13 @@ export class UserService {
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }finally{
-      queryRunner.release();
+      // await queryRunner.release();
     }
     
   }
 
   async remove(id: number): Promise<string> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({ where: { id: id } });
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
@@ -361,7 +362,7 @@ export class UserService {
         description: description,
         timestamp: new Date(),
       };
-      const newActivity = this.clientActivityRepository.create(activity);
+      const newActivity = await this.clientActivityRepository.create(activity);
       const activitySaved = await this.clientActivityRepository.save(newActivity);
       return activitySaved;
     } else {
@@ -399,7 +400,7 @@ export class UserService {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     
     } finally{
-      queryRunner.release()
+      // await queryRunner.release()
     }
     
   }
@@ -427,7 +428,7 @@ export class UserService {
         await queryRunner.rollbackTransaction();
         throw new HttpException('Error signing up!', HttpStatus.BAD_REQUEST);
     } finally {
-        await queryRunner.release();
+        // await queryRunner.release();
     }
     
   }
@@ -437,13 +438,14 @@ export class UserService {
     return user;
   }
 
-  async createStudent(createStudentDto: CreateClientDTO): Promise<void> {
+  async createStudent(createStudentDto: CreateClientDTO): Promise<Client> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
       const { email, name, fitnessGoal, activityLevel, birthdate, gender, height, weight, coachId } = createStudentDto;
+
       const coach = await this.findCoachByUserId(coachId);
       if(!coach)
         throw new HttpException('Coach not found.', HttpStatus.NOT_FOUND)
@@ -451,6 +453,7 @@ export class UserService {
       const existUser = await this.findByEmail(email);
       if(existUser)
         throw new HttpException('Already exists an user with that email.', HttpStatus.CONFLICT)
+      console.log('EMAIL: ', email)
       const hashedPassword = await bcrypt.hash(email, 10);
       const user = await queryRunner.manager.create(User, { email, password: hashedPassword, userType: EUserType.CLIENT, isVerified: false });
       const userSaved = await queryRunner.manager.save(User, user);
@@ -462,20 +465,23 @@ export class UserService {
       const subscription = await queryRunner.manager.create(Subscription, {user: userSaved, status: EStatus.INACTIVE})
       const subscriptionSaved = await queryRunner.manager.save(Subscription, subscription);
       
-      try {
-        const verificationToken = this.jwtService.sign({ email });
-        await this.emailService.sendVerificationEmail(email, verificationToken);
-      } catch (emailError) {
-        console.error('Error sending verification email:', emailError);
-        throw new HttpException('Error sending verification email', HttpStatus.INTERNAL_SERVER_ERROR);
-      }
+      // try {
+      //   const verificationToken = this.jwtService.sign({ email });
+      //   await this.emailService.sendVerificationEmail(email, verificationToken);
+      // } catch (emailError) {
+      //   console.error('Error sending verification email:', emailError);
+      //   throw new HttpException('Error sending verification email', HttpStatus.INTERNAL_SERVER_ERROR);
+      // }
       await queryRunner.commitTransaction();
+      const fullClient = await this.clientRepository.findOne({ where: { user: { email: email }}, relations: ['user']});
+      console.log('Full client: ', fullClient)
+      return fullClient
     } catch (error) {
       console.error('Error creating student: ', error);
       await queryRunner.rollbackTransaction()
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }{
-      await queryRunner.release();
+      // await queryRunner.release();
     }
     
   }
@@ -486,21 +492,21 @@ export class UserService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      await queryRunner.manager.update(Client, {id: clientId}, {
+      const updatedClient = await queryRunner.manager.update(Client, {id: clientId}, {
         fitnessGoal: updateClientDto.fitnessGoal.join(', '),
         activityLevel: updateClientDto.activityLevel,
         phoneNumber: updateClientDto.phoneNumber
       })
       const client = await this.getStudentById(clientId);
-      console.log('USER ACA', client)
       await this.logActivity(client.user.id, 'Profile details updated.')
       await queryRunner.commitTransaction();
+      return updatedClient
     } catch (error) {
       console.error(error)
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
     }finally{
-      await queryRunner.release();
+      // await queryRunner.release();
     }
   }
   async getAllStudentsByCoach(userId: any) {
@@ -543,7 +549,7 @@ export class UserService {
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST, { cause: error})
     }finally {
-      await queryRunner.release();
+      // await queryRunner.release();
     }
   }
 }

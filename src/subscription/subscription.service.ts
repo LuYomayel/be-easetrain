@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { EStatus, Subscription } from './entities/subscription.entity';
 import {
   CreateSubscriptionDTO,
@@ -98,7 +98,7 @@ export class SubscriptionService {
   async updateCoachPlan(
     coachPlanId:number,
     createCoachPlanDTO: CreateCoachPlanDTO,
-  ): Promise<void> {
+  ): Promise<UpdateResult> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -115,7 +115,7 @@ export class SubscriptionService {
       });
 
       await queryRunner.commitTransaction();
-
+      return newCoachSubscription
     } catch (error) {
       console.log(error);
       await  queryRunner.rollbackTransaction();
