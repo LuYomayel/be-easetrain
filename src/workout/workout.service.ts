@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AssignWorkoutDto, CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { IWorkoutInstance, Workout, WorkoutInstance } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
@@ -20,7 +20,7 @@ import { TrainingCycle } from './entities/training-cycle.entity';
 import { TrainingWeek } from './entities/training-week.entity';
 import { TrainingSession } from './entities/training-session.entity';
 import { ExerciseSetLog } from '../exercise/entities/exercise-set-log.entity';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -28,7 +28,7 @@ export class WorkoutService {
     private workoutRepository: Repository<Workout>,
     @InjectRepository(WorkoutInstance)
     private workoutInstanceRepository: Repository<WorkoutInstance>,
-    private dataSource: DataSource,
+    // private dataSource: DataSource,
     @InjectRepository(Exercise)
     private exerciseRepository: Repository<Exercise>,
     @InjectRepository(ExerciseGroup)
@@ -52,6 +52,9 @@ export class WorkoutService {
     private trainingSessionRepository: Repository<TrainingSession>,
     @InjectRepository(ExerciseSetLog)
     private exerciseSetLogRepository: Repository<ExerciseSetLog>,
+    
+    @InjectDataSource() private readonly dataSource: DataSource
+    
   ) {}
 
   async create(createWorkoutDto: CreateWorkoutDto) {
@@ -141,7 +144,6 @@ export class WorkoutService {
   
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    // console.log(updateWorkoutDto)
     // return;
     try {
       // Encontrar la plantilla Workout
@@ -167,7 +169,6 @@ export class WorkoutService {
       if (!existingWorkoutInstance) {
         throw new HttpException('Template workout instance not found', HttpStatus.NOT_FOUND);
       }
-  
       // Actualizar la instancia WorkoutInstance
       const updatedWorkoutInstance = {
         ...existingWorkoutInstance,
@@ -179,24 +180,22 @@ export class WorkoutService {
         WorkoutInstance,
         updatedWorkoutInstance,
       );
-        // console.log('savedWorkoutInstance: ', savedWorkoutInstance)
       // Actualizar o crear los grupos de ejercicios
       for (const groupDto of updateWorkoutDto.groups) {
         
         const existingGroup = existingWorkoutInstance.groups.find(g => g.id === groupDto.id);
-  
         const exerciseGroup = existingGroup
           ? {
               ...existingGroup,
               ...groupDto,
+              workoutInstance: savedWorkoutInstance,
             }
           : queryRunner.manager.create(ExerciseGroup, {
               ...groupDto,
               workoutInstance: savedWorkoutInstance,
             });
-            // console.log('exerciseGroup: ', exerciseGroup)
             
-        const savedGroup = await queryRunner.manager.save(ExerciseGroup, exerciseGroup);
+            const savedGroup = await queryRunner.manager.save(ExerciseGroup, exerciseGroup);
         // Actualizar o crear las instancias de ejercicios
         for (const exerciseDto of groupDto.exercises) {
           const existingExercise = existingGroup?.exercises.find(e => e.id === exerciseDto.id);
@@ -213,10 +212,10 @@ export class WorkoutService {
                 group: savedGroup,
               });
   
-          await queryRunner.manager.save(ExerciseInstance, exerciseInstance);
+          const exerciseInstanceSaved = await queryRunner.manager.save(ExerciseInstance, exerciseInstance);
+       
         }
       }
-  
       await queryRunner.commitTransaction();
       return savedWorkoutInstance;
     } catch (error) {
@@ -261,6 +260,7 @@ export class WorkoutService {
           ? {
               ...existingGroup,
               ...groupDto,
+              workoutInstance: savedWorkoutInstance,
             }
           : queryRunner.manager.create(ExerciseGroup, {
               ...groupDto,
@@ -327,7 +327,7 @@ export class WorkoutService {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-  
+
   async findAllTrainingCyclesForClientByUserId(studentId: number) {
     try {
       const allTrainingCycles = await this.trainingCycleRepository.find({
@@ -477,7 +477,6 @@ export class WorkoutService {
       if (!session) {
         throw new HttpException('Training session not found', HttpStatus.NOT_FOUND);
       }
-  
       const workout = await this.workoutRepository.findOne({
         where: { id: workoutId },
         relations: ['workoutInstances'],
@@ -526,7 +525,6 @@ export class WorkoutService {
       });
       
       const savedWorkoutInstance = await queryRunner.manager.save(WorkoutInstance, newWorkoutInstance);
-      // console.log(savedWorkoutInstance)
       if(!savedWorkoutInstance.trainingSession)
         throw new HttpException('Error xd', HttpStatus.INTERNAL_SERVER_ERROR)
       const workoutInstanceReal = await this.workoutInstanceRepository.findOne({
@@ -535,9 +533,7 @@ export class WorkoutService {
       });
       if(!workoutInstanceReal)
         throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND)
-      // console.log('Workoutinstance real: ', workoutInstanceReal)
       for (const group of workoutInstanceReal.groups) {
-        // console.log('GRup:', group)
         const newGroup = queryRunner.manager.create(ExerciseGroup, {
           groupNumber: group.groupNumber,
           set: group.set,
@@ -545,7 +541,6 @@ export class WorkoutService {
           workoutInstance: savedWorkoutInstance,
         });
         const savedGroup = await queryRunner.manager.save(ExerciseGroup, newGroup);
-        // console.log('savedGroup: ', savedGroup, savedGroup.id)
         for (const exercise of group.exercises) {
           const newExercise = queryRunner.manager.create(ExerciseInstance, {
             repetitions: exercise.repetitions,
@@ -566,24 +561,14 @@ export class WorkoutService {
           });
           
           const exerciseInstanceSaved = await queryRunner.manager.save(ExerciseInstance, newExercise);
-          console.log('Exercise instance: ', exerciseInstanceSaved, exerciseInstanceSaved.id)
         }
       }
       session.workoutInstances.push(savedWorkoutInstance)
-      const sessionSaved= await queryRunner.manager.save(TrainingSession, session)
-      // throw new HttpException('Error xd', HttpStatus.INTERNAL_SERVER_ERROR)
-      // await queryRunner.manager.createQueryBuilder()
-      //   .relation(TrainingSession, "workoutInstances")
-      //   .of(session)
-      //   .add(savedWorkoutInstance);
-      // const updatedSession = await queryRunner.manager.save(TrainingSession, session);
-      // console.log('Updated Session: ', updatedSession)
-      // await queryRunner.manager.update(TrainingSession, {id: session.id}, {
-      //   workoutInstances: [...session.workoutInstances, savedWorkoutInstance]
-      // })
-      console.log('Saved session: ', sessionSaved)
+      const sessionSaved = await queryRunner.manager.save(TrainingSession, session)
+      
       await queryRunner.commitTransaction();
-      return session;
+      const fullSession = await this.trainingSessionRepository.findOne({where: { id: sessionSaved.id }, relations: ['workoutInstances', 'workoutInstances.groups', 'workoutInstances.groups.exercises']})
+      return fullSession;
     } catch (error) {
       console.log(error);
       await queryRunner.rollbackTransaction();
@@ -621,8 +606,6 @@ export class WorkoutService {
           where: { id: assignment.workoutId },
           relations: ['workoutInstances'],
         });
-        console.log('Workout: ', workout)
-        console.log('assignment: ', assignment)
 
         if (!workout) {
           throw new HttpException('Workout not found', HttpStatus.NOT_FOUND);
@@ -634,8 +617,10 @@ export class WorkoutService {
         }
   
         for (const week of cycle.trainingWeeks) {
+          if(assignment.dayOfWeek < 0 || assignment.dayOfWeek > 6)
+            throw new HttpException('Day of week must be between 0 and 6', HttpStatus.BAD_REQUEST)
           const session = week.trainingSessions.find(session => this.getDayOfWeek(session.sessionDate) === assignment.dayOfWeek);
-  
+
           if (session) {
             const newWorkoutInstance = queryRunner.manager.create(WorkoutInstance, {
               instanceName: templateInstance.instanceName,
@@ -712,6 +697,8 @@ export class WorkoutService {
       }
   
       await queryRunner.commitTransaction();
+      const fullCycle = await this.trainingCycleRepository.findOne({where: { id: cycleId}})
+      return fullCycle;
     } catch (error) {
       console.log(error);
       await queryRunner.rollbackTransaction();
@@ -894,7 +881,6 @@ export class WorkoutService {
   }
   async findOne(workoutId: number) {
     try {
-      // console.log(workoutId)
       const workout = await this.workoutInstanceRepository
         .createQueryBuilder('workoutInstance')
         .leftJoinAndSelect('workoutInstance.workout', 'workout')
@@ -906,7 +892,6 @@ export class WorkoutService {
         .where('workoutInstance.id = :workoutId', { workoutId })
         // .andWhere('exerciseInstance.exerciseId is not NULL')
         .getOne();
-      // console.log(workout)
     return workout;
     } catch (error) {
       throw new HttpException('Error fetching one workout by workout ID', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -1043,10 +1028,10 @@ export class WorkoutService {
         };
       })
     ));
-
+      console.log('Session time: ', workout.sessionTime)
     return {
       workoutId: workout.id,
-      sessionTime: format(workout.sessionTime, 'HH:mm'),
+      sessionTime: workout.sessionTime,
       generalFeedback: workout.generalFeedback,
       energyLevel: workout.energyLevel,
       mood: workout.mood,
@@ -1057,84 +1042,84 @@ export class WorkoutService {
   }
 
   async submitFeedback(workoutId: number, createFeedbackDto: CreateFeedbackDto): Promise<WorkoutInstance> {
-    const queryRunner = this.dataSource.createQueryRunner();
-  
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const workout = await this.findOne(workoutId)
-      if (!workout) {
-        throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND);
-      }
-  
-      for (const feedback of createFeedbackDto.exerciseFeedbackArray) {
-        let exerciseFound = false;
-        for (const group of workout.groups) {
-          const exercise = group.exercises.find(ex => ex.id == feedback.exerciseId);
-          if (exercise) {
-            exercise.completed = feedback.completed;
-            exercise.rpe = feedback.rating;
-            exercise.comments = feedback.comments;
-            await queryRunner.manager.save(ExerciseInstance, exercise);
-  
-            // Guardar los datos de los sets
-            for (const [index, set] of feedback.sets.entries()) {
-              const setLog = queryRunner.manager.create(ExerciseSetLog, {
-                workoutInstance: workout,
-                exerciseId: feedback.exerciseId,
-                exerciseInstance: { id: feedback.exerciseId },
-                setNumber: index + 1,
-                ...set,
-              });
-              await queryRunner.manager.save(ExerciseSetLog, setLog);
-            }
-  
-            exerciseFound = true;
-            break; // Sale del bucle de grupos si se encuentra el ejercicio
-          }
-        }
-        if (!exerciseFound) {
-          throw new HttpException(`Exercise instance with id ${feedback.exerciseId} not found`, HttpStatus.NOT_FOUND);
-        }
-      }
-      // Convertir el sessionTime de hh:mm a un objeto Date
-      // const parsedSessionTime = parse(createFeedbackDto.sessionTime, 'HH:mm', new Date());
-      console.log('HOLAAA: ', createFeedbackDto.sessionTime)
+  const queryRunner = this.dataSource.createQueryRunner();
 
-      workout.sessionTime = createFeedbackDto.sessionTime;
-      workout.generalFeedback = createFeedbackDto.generalFeedback;
-      workout.energyLevel = createFeedbackDto.energyLevel;
-      workout.mood = createFeedbackDto.mood;
-      workout.perceivedDifficulty = createFeedbackDto.perceivedDifficulty;
-      workout.additionalNotes = createFeedbackDto.additionalNotes;
-      workout.realEndDate = new Date();
-      workout.status = 'completed';
-      const workoutSaved = await queryRunner.manager.save(WorkoutInstance, workout);
-  
-      const user = await this.userRepository
-        .createQueryBuilder('user')
-        .leftJoinAndSelect('user.client', 'client')
-        .where('user.id = :userId', { userId: createFeedbackDto.userId })
-        .getOne();
-      if (user) {
-        const activity = {
-          user: user,
-          description: `Completed the workout session ${workout.workout.planName} - Week ${workout.trainingSession.trainingWeek.weekNumber || ''} -  Day ${workout.trainingSession.dayNumber || ''}`,
-          timestamp: new Date(),
-        }
-        const newActivity = queryRunner.manager.create(ClientActivity, activity);
-        await queryRunner.manager.save(ClientActivity, newActivity);
-      }
-      await queryRunner.commitTransaction();
-      return workoutSaved;
-    } catch (error) {
-      console.log(error);
-      await queryRunner.rollbackTransaction();
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }finally{
-      await queryRunner.release();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+  try {
+    const workout = await this.findOne(workoutId)
+    if (!workout) {
+      throw new HttpException('Workout instance not found', HttpStatus.NOT_FOUND);
     }
+    if(workout.status === 'completed')
+      throw new HttpException('Workout already completed', HttpStatus.BAD_REQUEST)
+    for (const feedback of createFeedbackDto.exerciseFeedbackArray) {
+      let exerciseFound = false;
+      for (const group of workout.groups) {
+        const exercise = group.exercises.find(ex => ex.id == feedback.exerciseId);
+        if (exercise) {
+          exercise.completed = feedback.completed;
+          exercise.completedNotAsPlanned = feedback.completedNotAsPlanned; // Guardar el nuevo campo
+          exercise.rpe = feedback.rating;
+          exercise.comments = feedback.comments;
+          await queryRunner.manager.save(ExerciseInstance, exercise);
+
+          // Guardar los datos de los sets
+          for (const [index, set] of feedback.sets.entries()) {
+            const setLog = queryRunner.manager.create(ExerciseSetLog, {
+              workoutInstance: workout,
+              exerciseId: feedback.exerciseId,
+              exerciseInstance: { id: feedback.exerciseId },
+              setNumber: index + 1,
+              ...set,
+            });
+            await queryRunner.manager.save(ExerciseSetLog, setLog);
+          }
+
+          exerciseFound = true;
+          break; // Sale del bucle de grupos si se encuentra el ejercicio
+        }
+      }
+      if (!exerciseFound) {
+        throw new HttpException(`Exercise instance with id ${feedback.exerciseId} not found`, HttpStatus.NOT_FOUND);
+      }
+    }
+    // Convertir el sessionTime de hh:mm a un objeto Date
+
+    workout.sessionTime = createFeedbackDto.sessionTime;
+    workout.generalFeedback = createFeedbackDto.generalFeedback;
+    workout.energyLevel = createFeedbackDto.energyLevel;
+    workout.mood = createFeedbackDto.mood;
+    workout.perceivedDifficulty = createFeedbackDto.perceivedDifficulty;
+    workout.additionalNotes = createFeedbackDto.additionalNotes;
+    workout.realEndDate = new Date();
+    workout.status = 'completed';
+    const workoutSaved = await queryRunner.manager.save(WorkoutInstance, workout);
+
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.client', 'client')
+      .where('user.id = :userId', { userId: createFeedbackDto.userId })
+      .getOne();
+    if (user) {
+      const activity = {
+        user: user,
+        description: `Completed the workout session ${workout.workout.planName} - Week ${workout.trainingSession.trainingWeek.weekNumber || ''} -  Day ${workout.trainingSession.dayNumber || ''}`,
+        timestamp: new Date(),
+      }
+      const newActivity = queryRunner.manager.create(ClientActivity, activity);
+      await queryRunner.manager.save(ClientActivity, newActivity);
+    }
+    await queryRunner.commitTransaction();
+    return workoutSaved;
+  } catch (error) {
+    console.log(error);
+    await queryRunner.rollbackTransaction();
+    throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+  }finally{
+    await queryRunner.release();
   }
+}
 
   async createTrainingCycle(createCycleDto: CreateCycleDto) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -1142,56 +1127,67 @@ export class WorkoutService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const coach = await this.userService.findCoachByUserId(createCycleDto.coachId);
-      if (!coach) {
-        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
-      }
+        const coach = await this.userService.findCoachByUserId(createCycleDto.coachId);
+        if (!coach) {
+          throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+        }
 
-      const client = await this.userService.findClientByClientId(createCycleDto.clientId);
-      if (!client) {
-        throw new HttpException('Client not found', HttpStatus.NOT_FOUND);
-      }
-      const trainingCycle = queryRunner.manager.create(TrainingCycle, {
-        client,
-        name: createCycleDto.name,
-        coach: coach,
-        startDate: new Date(createCycleDto.startDate),
-        endDate: createCycleDto.isMonthly
-          ? new Date(new Date(createCycleDto.startDate).getTime() + 27 * 24 * 60 * 60 * 1000) // Aproximadamente 4 semanas
-          : null,
-      });
+        const client = await this.userService.findClientByClientId(createCycleDto.clientId);
+        if (!client) {
+          throw new HttpException('Client not found', HttpStatus.NOT_FOUND);
+        }
 
-      const createdCycle = await queryRunner.manager.save(TrainingCycle, trainingCycle);
+        // Determinar la duración del ciclo
+        const startDate = new Date(createCycleDto.startDate);
+        let endDate, numberOfWeeks;
 
-      const numberOfWeeks = createCycleDto.isMonthly ? 4 : 1; // Por defecto a 4 semanas para mensual
-      const daysInWeek = 7;
+        if (createCycleDto.durationInMonths) {
+          endDate = new Date(startDate.getFullYear(), startDate.getMonth() + createCycleDto.durationInMonths, startDate.getDate());
+          numberOfWeeks = createCycleDto.durationInMonths * 4;  // Suposición de 4 semanas por mes
+        } else if (createCycleDto.durationInWeeks) {
+          numberOfWeeks = createCycleDto.durationInWeeks;
+          endDate = new Date(startDate.getTime() + numberOfWeeks * 7 * 24 * 60 * 60 * 1000);
+        } else {
+          throw new HttpException('Duration must be specified', HttpStatus.BAD_REQUEST);
+        }
 
-      for (let i = 0; i < numberOfWeeks; i++) {
-        const weekStartDate = new Date(new Date(createCycleDto.startDate).getTime() + i * daysInWeek * 24 * 60 * 60 * 1000);
-        const weekEndDate = new Date(weekStartDate.getTime() + (daysInWeek - 1) * 24 * 60 * 60 * 1000);
-
-        const trainingWeek = queryRunner.manager.create(TrainingWeek, {
-          trainingCycle: createdCycle,
-          weekNumber: i + 1,
-          startDate: weekStartDate,
-          endDate: weekEndDate,
+        const trainingCycle = queryRunner.manager.create(TrainingCycle, {
+          client,
+          name: createCycleDto.name,
+          coach: coach,
+          startDate: startDate,
+          endDate: endDate,
         });
 
-        const savedWeek = await queryRunner.manager.save(TrainingWeek, trainingWeek);
+        const createdCycle = await queryRunner.manager.save(TrainingCycle, trainingCycle);
 
-        for (let j = 0; j < daysInWeek; j++) {
-          const sessionDate = new Date(weekStartDate.getTime() + j * 24 * 60 * 60 * 1000);
-          const trainingSession = queryRunner.manager.create(TrainingSession, {
-            trainingWeek: savedWeek,
-            dayNumber: j + 1,
-            sessionDate: sessionDate,
+        for (let i = 0; i < numberOfWeeks; i++) {
+          const weekStartDate = new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+          const weekEndDate = new Date(weekStartDate.getTime() + 6 * 24 * 60 * 60 * 1000); // Asumiendo que cada semana comienza en domingo y termina en sábado
+
+          const trainingWeek = queryRunner.manager.create(TrainingWeek, {
+            trainingCycle: createdCycle,
+            weekNumber: i + 1,
+            startDate: weekStartDate,
+            endDate: weekEndDate,
           });
-          await queryRunner.manager.save(TrainingSession, trainingSession);
-        }
-      }
 
-      await queryRunner.commitTransaction();
-      return createdCycle;
+          const savedWeek = await queryRunner.manager.save(TrainingWeek, trainingWeek);
+
+          for (let j = 0; j < 7; j++) {
+            const sessionDate = new Date(weekStartDate.getTime() + j * 24 * 60 * 60 * 1000);
+            const trainingSession = queryRunner.manager.create(TrainingSession, {
+              trainingWeek: savedWeek,
+              dayNumber: j + 1,
+              sessionDate: sessionDate,
+            });
+            await queryRunner.manager.save(TrainingSession, trainingSession);
+          }
+        }
+
+        await queryRunner.commitTransaction();
+        const fullCycle = await this.trainingCycleRepository.findOne({where: {id: createdCycle.id}, relations: ['trainingWeeks', 'trainingWeeks.trainingSessions']})
+        return fullCycle;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);

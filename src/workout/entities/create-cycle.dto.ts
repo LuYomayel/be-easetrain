@@ -3,8 +3,8 @@ export class CreateCycleDto {
   name: string;
   coachId: number;
   startDate: Date;
-  endDate?: Date;
-  isMonthly: boolean;
+  durationInMonths?: number;  // Opcional, duración del ciclo en meses
+  durationInWeeks?: number;  // Opcional, duración del ciclo en semanas
   clientId: number;
 }
 

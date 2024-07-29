@@ -6,16 +6,16 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Subscription } from '../../subscription/entities/subscription.entity';
-import { FoodItem } from 'src/food-item/entities/food-item.entity';
+import { FoodItem } from '../../food-item/entities/food-item.entity';
 
 @Entity()
 export class MealPlan {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Subscription, (subscription) => subscription.mealPlans)
+  @ManyToOne(() => Subscription, subscription => subscription.mealPlans)
   subscription: Subscription;
-
+  
   @Column()
   dayOfWeek: string;
 

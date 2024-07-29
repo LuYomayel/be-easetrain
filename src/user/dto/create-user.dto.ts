@@ -1,4 +1,4 @@
-import { ISubcriptionPlan } from 'src/subscription/entities/subscription.plan.entity';
+import { ISubcriptionPlan } from '../../subscription/entities/subscription.plan.entity';
 import { EActivityLevel, EFitnessGoal } from '../entities/client.entity';
 import { ETrainingType } from '../entities/coach.entity';
 import { EUserType } from '../entities/user.entity';

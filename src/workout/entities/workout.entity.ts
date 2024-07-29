@@ -115,7 +115,7 @@ export class WorkoutInstance implements IWorkoutInstance {
   @Column({ type: 'datetime', nullable: true })
   realEndDate: Date;
 
-  @OneToMany(() => ExerciseGroup, (exerciseGroup) => exerciseGroup.workoutInstance, { eager: true })
+  @OneToMany(() => ExerciseGroup, (group) => group.workoutInstance, { cascade: true, eager: true })
   groups: ExerciseGroup[];
 
   @Column({ type: 'time', nullable: true })
@@ -136,7 +136,7 @@ export class WorkoutInstance implements IWorkoutInstance {
   @Column({ nullable: true })
   additionalNotes: string;
 
-  @ManyToOne(() => TrainingSession, trainingSession => trainingSession.workoutInstances, { eager: true })
+  @ManyToOne(() => TrainingSession, trainingSession => trainingSession.workoutInstances)
   trainingSession: TrainingSession; // Ejemplo: "Entrenamiento del Lunes de la Semana 1 de Julio"
 
   @OneToMany(() => ExerciseSetLog, setLog => setLog.workoutInstance)

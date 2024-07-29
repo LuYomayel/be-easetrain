@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { BodyArea } from './entities/body-area.entity';
 import { ExerciseBodyArea } from './entities/exercise-body-area.entity';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 import * as XLSX from 'xlsx';
 @Injectable()
 export class ExerciseService {

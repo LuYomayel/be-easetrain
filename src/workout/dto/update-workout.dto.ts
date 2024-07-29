@@ -1,8 +1,8 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateWorkoutDto } from './create-workout.dto';
-import { IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
-import { ICoach } from 'src/user/entities/coach.entity';
-import { IExerciseGroup } from 'src/exercise/entities/exercise-group.entity';
+import { IClientSubscription } from '../../subscription/entities/client.subscription.entity';
+import { ICoach } from '../../user/entities/coach.entity';
+import { IExerciseGroup } from '../../exercise/entities/exercise-group.entity';
 import { IWorkout, IWorkoutInstance } from '../entities/workout.entity';
 
 export class UpdateWorkoutDto {

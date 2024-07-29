@@ -95,6 +95,7 @@ export interface IExerciseInstance {
   rpe?: string;
   comments?: string;
   setLogs?: IExerciseSetLog[];
+  completedNotAsPlanned: boolean;
 }
 
 @Entity()
@@ -102,7 +103,7 @@ export class ExerciseInstance implements IExerciseInstance {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Exercise, (exercise) => exercise.exerciseInstances)
+  @ManyToOne(() => Exercise, (exercise) => exercise.exerciseInstances, {eager: true})
   exercise: Exercise;
 
   @Column({ nullable: true })
@@ -140,6 +141,9 @@ export class ExerciseInstance implements IExerciseInstance {
 
   @Column({ nullable: true })
   completed?: boolean;
+
+  @Column({ nullable: true })
+  completedNotAsPlanned: boolean;
 
   @Column({ nullable: true })
   rpe?: string;

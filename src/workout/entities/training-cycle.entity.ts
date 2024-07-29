@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Coach } from 'src/user/entities/coach.entity';
+import { Coach } from '../../user/entities/coach.entity';
 import { TrainingWeek } from './training-week.entity';
-import { Client, IClient } from 'src/user/entities/client.entity';
+import { Client, IClient } from '../../user/entities/client.entity';
 
 export interface ITrainingCycle {
   id: number;
@@ -33,6 +33,6 @@ export class TrainingCycle implements ITrainingCycle {
   @ManyToOne(() => Client, client => client.trainingCycles)
   client: Client; 
 
-  @OneToMany(() => TrainingWeek, trainingWeek => trainingWeek.trainingCycle)
+  @OneToMany(() => TrainingWeek, trainingWeek => trainingWeek.trainingCycle, {eager: true})
   trainingWeeks: TrainingWeek[];
 }

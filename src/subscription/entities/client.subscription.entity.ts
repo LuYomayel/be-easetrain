@@ -10,7 +10,7 @@ import {
 import { User } from '../../user/entities/user.entity';
 import { ISubscription, Subscription } from './subscription.entity';
 import { CoachPlan, ICoachPlan } from './coach.plan.entity';
-import { Client, IClient } from 'src/user/entities/client.entity';
+import { Client, IClient } from '../../user/entities/client.entity';
 import { IWorkoutInstance, WorkoutInstance } from '../../workout/entities/workout.entity';
 
 export interface IClientSubscription{

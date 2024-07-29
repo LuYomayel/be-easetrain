@@ -43,8 +43,8 @@ export class Subscription implements ISubscription {
   @JoinColumn()
   user: User;
 
-  @OneToMany(() => MealPlan, (mealPlan) => mealPlan.subscription)
-  mealPlans?: MealPlan[];
+  @OneToMany(() => MealPlan, mealPlan => mealPlan.subscription)
+  mealPlans: MealPlan[];
 
   @OneToMany(() => Schedule, (schedule) => schedule.subscription)
   schedules?: Schedule[];

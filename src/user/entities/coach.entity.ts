@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Client, IClient } from './client.entity';
-import { Exercise, IExercise } from 'src/exercise/entities/exercise.entity';
-import { ITrainingCycle, TrainingCycle } from 'src/workout/entities/training-cycle.entity';
+import { Exercise, IExercise } from '../../exercise/entities/exercise.entity';
+import { ITrainingCycle, TrainingCycle } from '../../workout/entities/training-cycle.entity';
 
 export enum ETrainingType {
   CROSS_FIT = 'cross fit',
@@ -30,7 +30,7 @@ export interface ICoach {
   experience: string;
   clients: IClient[];
   exercises: IExercise[];
-  trainingCycle?: ITrainingCycle[];
+  trainingCycles?: ITrainingCycle[];
 }
 
 @Entity()

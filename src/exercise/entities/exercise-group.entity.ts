@@ -28,7 +28,7 @@ export class ExerciseGroup implements IExerciseGroup {
   @ManyToOne(() => WorkoutInstance, (workoutInstance) => workoutInstance.groups)
   workoutInstance: WorkoutInstance;
 
-  @OneToMany(() => ExerciseInstance, (exerciseInstance) => exerciseInstance.group)
+  @OneToMany(() => ExerciseInstance, (exercise) => exercise.group, { cascade: true, eager: true })
   exercises: ExerciseInstance[];
 
   @Column()

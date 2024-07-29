@@ -28,6 +28,6 @@ export class TrainingWeek implements ITrainingWeek {
   @ManyToOne(() => TrainingCycle, trainingCycle => trainingCycle.trainingWeeks)
   trainingCycle: TrainingCycle;
 
-  @OneToMany(() => TrainingSession, trainingSession => trainingSession.trainingWeek)
+  @OneToMany(() => TrainingSession, trainingSession => trainingSession.trainingWeek, {eager: true})
   trainingSessions: TrainingSession[];
 }

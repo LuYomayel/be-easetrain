@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Coach, ICoach } from './coach.entity';
-import { ClientSubscription, IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
-import { ITrainingCycle, TrainingCycle } from 'src/workout/entities/training-cycle.entity';
+import { ClientSubscription, IClientSubscription } from '../../subscription/entities/client.subscription.entity';
+import { ITrainingCycle, TrainingCycle } from '../../workout/entities/training-cycle.entity';
 
 export enum EFitnessGoal {
   WEIGHT_LOSS = 'weight loss',

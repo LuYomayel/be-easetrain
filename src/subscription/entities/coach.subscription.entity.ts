@@ -9,7 +9,7 @@ import {
 import { User } from '../../user/entities/user.entity';
 import { ISubscription, Subscription } from './subscription.entity';
 import { ISubcriptionPlan, SubscriptionPlan } from './subscription.plan.entity';
-import { Coach } from 'src/user/entities/coach.entity';
+import { Coach } from '../../user/entities/coach.entity';
 
 export interface ICoachSubscription{
   id:number;
@@ -30,7 +30,6 @@ export class CoachSubscription {
   @JoinColumn()
   coach: Coach;
 
-  @ManyToOne(() => SubscriptionPlan)
-  @JoinColumn()
+  @ManyToOne(() => SubscriptionPlan, subscriptionPlan => subscriptionPlan.coachSubscriptions)
   subscriptionPlan: SubscriptionPlan;
 }

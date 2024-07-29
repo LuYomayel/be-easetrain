@@ -1,5 +1,5 @@
-import { IExerciseGroup } from 'src/exercise/entities/exercise-group.entity';
-import { IClientSubscription } from 'src/subscription/entities/client.subscription.entity';
+import { IExerciseGroup } from '../../exercise/entities/exercise-group.entity';
+import { IClientSubscription } from '../../subscription/entities/client.subscription.entity';
 import { IWorkout, IWorkoutInstance } from '../entities/workout.entity';
 
 export class CreateWorkoutDto {

@@ -46,6 +46,10 @@ class ExerciseFeedbackDto {
   @IsOptional()
   completed: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  completedNotAsPlanned: boolean; // Nuevo campo
+
   @IsString()
   @IsOptional()
   comments: string;

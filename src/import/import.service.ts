@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import * as XLSX from 'xlsx';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Workout, WorkoutInstance } from 'src/workout/entities/workout.entity';
-import { Exercise, ExerciseInstance } from 'src/exercise/entities/exercise.entity';
-import { ExerciseGroup } from 'src/exercise/entities/exercise-group.entity';
+import { Workout, WorkoutInstance } from '../workout/entities/workout.entity';
+import { Exercise, ExerciseInstance } from '../exercise/entities/exercise.entity';
+import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
 
 @Injectable()
 export class ImportService {

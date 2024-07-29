@@ -1,13 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { CoachSubscription, ICoachSubscription } from './coach.subscription.entity';
 export interface ISubcriptionPlan{
     id:number;
     name:string;
     max_clients:number;
     price:number;
+    coachSubscriptions?: ICoachSubscription[];
 }
 @Entity()
-export class SubscriptionPlan {
+export class SubscriptionPlan implements ISubcriptionPlan {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -19,4 +20,7 @@ export class SubscriptionPlan {
 
   @Column()
   price: number;
+
+  @OneToMany(() => CoachSubscription, coachSubscription => coachSubscription.subscriptionPlan)
+  coachSubscriptions?: CoachSubscription[];
 }

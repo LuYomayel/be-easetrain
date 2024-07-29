@@ -16,7 +16,7 @@ import { ClientSubscription } from '../subscription/entities/client.subscription
 import { CoachSubscription } from '../subscription/entities/coach.subscription.entity';
 import { EStatus, Subscription } from '../subscription/entities/subscription.entity'
 import { CreateClientDTO } from './dto/create-client.dto';
-import { CoachPlan } from 'src/subscription/entities/coach.plan.entity';
+import { CoachPlan } from '../subscription/entities/coach.plan.entity';
 import { DataSource } from 'typeorm';
 import { EmailService } from '../email/email.service';
 import { JwtService } from '@nestjs/jwt';
@@ -520,7 +520,6 @@ export class UserService {
         throw new HttpException('Error getting all students by Coach ID', HttpStatus.NOT_FOUND);
     }
   }
-
   async removeClient(clientId: number){
     const queryRunner = this.dataSource.createQueryRunner();
 
