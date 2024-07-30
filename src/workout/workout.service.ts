@@ -713,9 +713,9 @@ export class WorkoutService {
   }
 
   getDayOfWeek(date: Date): number {
-    const day = date.getUTCDay();
-    // Ajustar para que el lunes sea 0
-    return (day === 0) ? 6 : day - 1;
+    // const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    // return days[date.getUTCDay()];
+    return date.getUTCDay();
   }
 
   async findAllWorkoutsByCoachIdExcludingClientId(
