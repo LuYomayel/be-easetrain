@@ -623,7 +623,7 @@ export class WorkoutService {
         for (const week of cycle.trainingWeeks) {
           if(assignment.dayOfWeek < 0 || assignment.dayOfWeek > 6)
             throw new HttpException('Day of week must be between 0 and 6', HttpStatus.BAD_REQUEST)
-          const session = week.trainingSessions.find(session => this.getDayOfWeek(session.sessionDate) === assignment.dayOfWeek);
+          const session = week.trainingSessions.find(session => this.getDayOfWeek(session.sessionDate) === (assignment.dayOfWeek - 1));
 
           if (session) {
             const newWorkoutInstance = queryRunner.manager.create(WorkoutInstance, {
