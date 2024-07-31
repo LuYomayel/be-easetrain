@@ -623,7 +623,7 @@ export class WorkoutService {
         for (const week of cycle.trainingWeeks) {
           if(assignment.dayOfWeek < 1 || assignment.dayOfWeek > 7)
             throw new HttpException('Day of week must be between 1 and 7', HttpStatus.BAD_REQUEST)
-          const session = week.trainingSessions.find(session => session.dayNumber === (assignment.dayOfWeek));
+          const session = week.trainingSessions.find(session => this.getDayOfWeek(session.sessionDate) === (assignment.dayOfWeek));
 
           if (session) {
             const newWorkoutInstance = queryRunner.manager.create(WorkoutInstance, {
@@ -715,7 +715,7 @@ export class WorkoutService {
   getDayOfWeek(date: Date): number {
     // const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     // return days[date.getUTCDay()];
-    return date.getUTCDay();
+    return date.getUTCDay() === 0 ? 7 : date.getUTCDay();
   }
 
   async findAllWorkoutsByCoachIdExcludingClientId(

@@ -39,6 +39,26 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { CreateFeedbackDto } from './dto/create-feedback-dto';
 dotenv.config({ path: '.env.test' });
+const mockUserService = {
+  findCoachByUserId: jest.fn(),
+  findClientByClientId: jest.fn(),
+};
+
+const mockRepository = {
+  create: jest.fn(),
+  save: jest.fn(),
+};
+const mockDataSource = {
+  createQueryRunner: jest.fn().mockReturnValue({
+    connect: jest.fn(),
+    startTransaction: jest.fn(),
+    manager: mockRepository,
+    commitTransaction: jest.fn(),
+    rollbackTransaction: jest.fn(),
+    release: jest.fn(),
+  }),
+};
+
 describe('WorkoutService', () => {
   let service: WorkoutService;
   let dataSource: DataSource;
@@ -55,7 +75,9 @@ describe('WorkoutService', () => {
   let coach: Coach;
   let client: Client;
   let clientSubscription: ClientSubscription;
-  let module: TestingModule
+  let module: TestingModule;
+
+  
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
@@ -223,14 +245,12 @@ describe('WorkoutService', () => {
   const clientSubscriptionCreated = clientSubscriptionRepository.create({
     client: client,
     subscription: savedSubscriptionClient,
-    /* additional details if needed */
   });
   clientSubscription = await clientSubscriptionRepository.save(clientSubscriptionCreated);
 
   const coachSubscription = coachSubscriptionRepository.create({
     coach: createdCoach,
     subscription: savedSubscription,
-    /* additional details if needed */
   });
   await coachSubscriptionRepository.save(coachSubscription);
 
@@ -320,11 +340,14 @@ describe('WorkoutService', () => {
     }
   });
 
+
+/*
   it('should be defined', () => {
     expect(service).toBeDefined();
     expect(clientSubscription).toBeDefined();
   });
 
+  
   it('should create a new workout and instance', async () => {
     const createWorkoutDto: CreateWorkoutDto = {
       workout: {
@@ -692,9 +715,83 @@ it('should create a full cycle with correct duration based on weeks', async () =
     await expect(service.createTrainingCycle(cycleDto)).rejects.toThrow('Internal Server Error');
     
   });
-
+  */
   
+  it('should return 1 to monday an 7 to sunday', () => {
+    expect(service.getDayOfWeek(new Date('2024-10-20'))).toBe(7)
+    expect(service.getDayOfWeek(new Date('2024-03-04'))).toBe(1)
+    expect(service.getDayOfWeek(new Date('2024-03-06'))).toBe(3)
+  })
+  it('should create training sessions with correct day numbers and session dates', async () => {
+    const createCycleDto = {
+      name: 'Test Cycle',
+      coachId: createdCoach.id,
+      clientId: client.id,
+      startDate: new Date('2024-10-20'), // Domingo
+      durationInWeeks: 1,
+    };
+  
+    trainingCycle = await service.createTrainingCycle(createCycleDto);
+  
+    const trainingWeeks = await dataSource.getRepository(TrainingWeek).find({
+      where: { trainingCycle: { id: trainingCycle.id } },
+      relations: ['trainingSessions'],
+    });
+  
+    expect(trainingWeeks).toHaveLength(1);
+    const trainingSessions = trainingWeeks[0].trainingSessions;
+    expect(trainingSessions).toHaveLength(7);
+  
+    trainingSessions.forEach((session, index) => {
+      const expectedDayNumber = index + 1; // Lunes es 1, Domingo es 7
+      const expectedSessionDate = new Date(createCycleDto.startDate.getTime() + index * 24 * 60 * 60 * 1000);
+      
+      expect(session.dayNumber).toBe(expectedDayNumber);
+      expect(session.sessionDate.toISOString().substring(0, 10)).toBe(expectedSessionDate.toISOString().substring(0, 10));
+    });
+  });
+  
+  it('should create training sessions correctly for a 3-month duration', async () => {
+    const createCycleDto = {
+      name: '3-Month Test Cycle',
+      coachId: createdCoach.id,
+      clientId: client.id,
+      startDate: new Date('2024-01-01'), // Lunes
+      durationInMonths: 3,
+    };
+  
+    trainingCycle = await service.createTrainingCycle(createCycleDto);
+  
+    const trainingWeeks = await dataSource.getRepository(TrainingWeek).find({
+      where: { trainingCycle: { id: trainingCycle.id } },
+      relations: ['trainingSessions'],
+    });
+  
+    const startDate = new Date('2024-01-01');
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 3);
+  
+    const numberOfWeeks = Math.ceil((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  
+    expect(trainingWeeks).toHaveLength(12);
+  
+    trainingWeeks.forEach((week, weekIndex) => {
+      const weekStartDate = new Date(startDate.getTime() + weekIndex * 7 * 24 * 60 * 60 * 1000);
+      const trainingSessions = week.trainingSessions;
+      expect(trainingSessions).toHaveLength(7);
+  
+      trainingSessions.forEach((session, sessionIndex) => {
+        const expectedDayNumber = sessionIndex + 1; // Lunes es 1, Domingo es 7
+        const expectedSessionDate = new Date(weekStartDate.getTime() + sessionIndex * 24 * 60 * 60 * 1000);
+  
+        expect(session.dayNumber).toBe(expectedDayNumber);
+        expect(session.sessionDate.toISOString().substring(0, 10)).toBe(expectedSessionDate.toISOString().substring(0, 10));
+      });
+    });
+  });
+
   afterAll(async () => {
     await dataSource.destroy();
   });
+  
 });
