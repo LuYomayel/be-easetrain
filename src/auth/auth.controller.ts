@@ -1,8 +1,10 @@
-import { Controller, Request, Post, UseGuards, Body, Get, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Request, Post, UseGuards, Body, Get, Query, HttpException, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { JwtStrategy } from './jwt.strategy';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -17,6 +19,13 @@ export class AuthController {
     } catch (error) {
       throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-token')
+  verifyToken(@Request() req) {
+    // Si el guard pasó, entonces el token es válido
+    return { valid: true };
   }
 
   @Post('forgot-password')

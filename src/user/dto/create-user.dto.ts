@@ -19,7 +19,7 @@ export class CreateUserDTO {
   userType: EUserType;
 }
 
-export class CreateCoachDTO extends CreateUserDTO {
+export class CreateCoachDTO {
   @IsString({ message: 'Name must be a string.' })
   name: string;
 

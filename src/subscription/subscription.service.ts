@@ -149,12 +149,16 @@ export class SubscriptionService {
     }
     
   }
-  async createClientSubscription(createClientSubscriptionDTO: CreateClientSubscriptionDTO): Promise<ClientSubscription> {
+  async createClientSubscription(createClientSubscriptionDTO: CreateClientSubscriptionDTO, userId: number): Promise<ClientSubscription> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
+      const clientsSubscribed = await this.findClientsSubscribedToCoachByUserId(userId);
+      const coachSubscription = await this.findCoachSubscriptions(userId);
+      if(clientsSubscribed.length >= coachSubscription.subscriptionPlan.max_clients)
+        throw new HttpException(`Your plan allows you to have just ${coachSubscription.subscriptionPlan.max_clients} at the same time.`, HttpStatus.CONFLICT)
       const { coachPlanId, clientId, startDate, endDate } = createClientSubscriptionDTO;
       // Buscar el client
       const client = await this.userService.findUserOfClientByClientID(clientId);
