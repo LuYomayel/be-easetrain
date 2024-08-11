@@ -13,8 +13,10 @@ import { ITrainingCycle, TrainingCycle } from '../../workout/entities/training-c
 
 export enum ETrainingType {
   CROSS_FIT = 'cross fit',
-  CALISTENICS = 'calistenics',
+  CALISTHENICS = 'calisthenics',
   GENERAL_FITNESS = 'general fitness',
+  STRENGTH = 'strength',
+  CARDIO = 'cardio'
 }
 
 export interface ICoach {

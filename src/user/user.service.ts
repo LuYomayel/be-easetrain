@@ -80,7 +80,7 @@ export class UserService {
     }
     const client = await this.clientRepository.findOne({
       where: { user: { id: user.id } },
-      relations: ['user'],
+      relations: ['user', 'user.subscription'],
     });
     return client;
   }
@@ -462,13 +462,13 @@ export class UserService {
       const subscription = await queryRunner.manager.create(Subscription, {user: userSaved, status: EStatus.INACTIVE})
       const subscriptionSaved = await queryRunner.manager.save(Subscription, subscription);
       
-      // try {
-      //   const verificationToken = this.jwtService.sign({ email });
-      //   await this.emailService.sendVerificationEmail(email, verificationToken);
-      // } catch (emailError) {
-      //   console.error('Error sending verification email:', emailError);
-      //   throw new HttpException('Error sending verification email', HttpStatus.INTERNAL_SERVER_ERROR);
-      // }
+      try {
+        const verificationToken = this.jwtService.sign({ email });
+        await this.emailService.sendVerificationEmail(email, verificationToken);
+      } catch (emailError) {
+        console.error('Error sending verification email:', emailError);
+        throw new HttpException('Error sending verification email', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
       await queryRunner.commitTransaction();
       const fullClient = await this.clientRepository.findOne({ where: { user: { email: email }}, relations: ['user']});
       console.log('Full client: ', fullClient)

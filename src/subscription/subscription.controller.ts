@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, Request } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import {
   CreateClientSubscriptionDTO,
@@ -7,6 +7,7 @@ import {
   CreateSubscriptionDTO,
 } from './dto/create-suscription.dto';
 import { UpdateSubscriptionDTO } from './dto/update-suscription.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 // import { UpdateSubscriptionDTO } from './dto/update-suscription.dto';
 
 @Controller('subscription')
@@ -36,12 +37,15 @@ export class SubscriptionController {
     return this.suscriptionService.deleteCoachPlan(coachPlanId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('client')
   createClientSubscription(
     @Body() createClientSubscriptionDTO: CreateClientSubscriptionDTO,
+    @Request() req,
   ) {
     return this.suscriptionService.createClientSubscription(
       createClientSubscriptionDTO,
+      req.user.id
     );
   }
 
