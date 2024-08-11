@@ -1,39 +1,37 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsBoolean, IsOptional, IsDate, IsNotEmpty } from 'class-validator';
+import { IsNumber, IsBoolean, IsOptional, IsDate, Min } from 'class-validator';
 
 export class UpdateSubscriptionDTO {
-  @IsNumber()
-  @IsNotEmpty()
+  @IsNumber({}, { message: 'Coach ID must be a number.' })
+  @Min(1, { message: 'Coach ID must be a positive integer.' })
   coachId: number;
 
-  @IsNumber()
-  @IsNotEmpty()
+  @IsNumber({}, { message: 'Client ID must be a number.' })
+  @Min(1, { message: 'Client ID must be a positive integer.' })
   clientId: number;
 
-  @IsDate()
-  @IsNotEmpty()
   @Type(() => Date)
+  @IsDate({ message: 'Start date must be a valid date.' })
   startDate: Date;
 
-  @IsDate()
-  @IsNotEmpty()
   @Type(() => Date)
+  @IsDate({ message: 'End date must be a valid date.' })
   endDate: Date;
 
-  @IsDate()
-  @IsNotEmpty()
   @Type(() => Date)
+  @IsDate({ message: 'Payment date must be a valid date.' })
   paymentDate: Date;
 
-  @IsNumber()
-  @IsNotEmpty()
+  @IsNumber({}, { message: 'Coach plan ID must be a number.' })
+  @Min(1, { message: 'Coach plan ID must be a positive integer.' })
   coachPlanId: number;
 
-  @IsNumber()
   @IsOptional()
+  @IsNumber({}, { message: 'Workouts per week must be a number.' })
+  @Min(1, { message: 'Workouts per week must be at least 1.' })
   workoutsPerWeek?: number;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean({ message: 'Include meal plan must be a boolean value.' })
   includeMealPlan?: boolean;
 }

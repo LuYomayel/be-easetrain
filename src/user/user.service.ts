@@ -223,7 +223,6 @@ export class UserService {
       }
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(user.password, saltRounds);
-      console.log('Hola')
       // Crear un nuevo objeto user con el password encriptado
       const updatedUser = {
         ...findUser,
@@ -231,9 +230,7 @@ export class UserService {
         password: hashedPassword,
       };
       const ususarioAct= await queryRunner.manager.save(User, updatedUser);
-      console.log('Hola2:', ususarioAct)
       const actividadGuardada = await this.logActivity(findUser.id, 'User changed their password.')
-      console.log('ACtiidad guardada: ', actividadGuardada)
 
       await queryRunner.commitTransaction();
     } catch (error) {

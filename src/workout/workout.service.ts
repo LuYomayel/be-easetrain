@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AssignWorkoutDto, CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DeleteResult, In, Repository, UpdateResult } from 'typeorm';
 import { IWorkoutInstance, Workout, WorkoutInstance } from './entities/workout.entity';
 import { DataSource } from 'typeorm';
 import { ExerciseGroup } from '../exercise/entities/exercise-group.entity';
@@ -367,6 +367,53 @@ export class WorkoutService {
     }
   }
 
+  async findTrainingCyclesByCycleIdAndDayNumber(cycleId: number, dayNumber: number) {
+    try {
+      const trainingCycles = await this.trainingCycleRepository.find({
+        where: {
+          id: cycleId, // Filtrar por cycleId
+          trainingWeeks: {
+            trainingSessions: {
+              dayNumber: dayNumber, // Filtrar por dayNumber
+            },
+          },
+        },
+        relations: [
+          'trainingWeeks',
+          'trainingWeeks.trainingSessions',
+          'client',
+          'trainingWeeks.trainingSessions.workoutInstances',
+          'trainingWeeks.trainingSessions.workoutInstances.workout',
+        ],
+      });
+
+      // Extraer todos los workouts de las sesiones de entrenamiento
+        const allWorkouts = trainingCycles.flatMap(cycle =>
+          cycle.trainingWeeks.flatMap(week =>
+            week.trainingSessions.flatMap(session =>
+              session.workoutInstances.map(workoutInstance => workoutInstance.workout)
+            )
+          )
+        );
+
+        // Utilizar un mapa para obtener workouts únicos
+        const uniqueWorkoutsMap = new Map();
+        allWorkouts.forEach(workout => {
+          if (!uniqueWorkoutsMap.has(workout.id)) {
+            uniqueWorkoutsMap.set(workout.id, workout);
+          }
+        });
+
+        // Convertir el mapa a una lista de workouts únicos
+        const uniqueWorkouts = Array.from(uniqueWorkoutsMap.values());
+
+        return uniqueWorkouts;
+    } catch (error) {
+      console.error(error);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   async assignWorkout(assignWorkoutDto: AssignWorkoutDto) {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -624,7 +671,7 @@ export class WorkoutService {
           if(assignment.dayOfWeek < 1 || assignment.dayOfWeek > 7)
             throw new HttpException('Day of week must be between 1 and 7', HttpStatus.BAD_REQUEST)
           const session = week.trainingSessions.find(session => this.getDayOfWeek(session.sessionDate) === (assignment.dayOfWeek));
-
+          
           if (session) {
             const newWorkoutInstance = queryRunner.manager.create(WorkoutInstance, {
               instanceName: templateInstance.instanceName,
@@ -699,7 +746,6 @@ export class WorkoutService {
           }
         }
       }
-  
       await queryRunner.commitTransaction();
       const fullCycle = await this.trainingCycleRepository.findOne({where: { id: cycleId}})
       return fullCycle;
@@ -1003,6 +1049,78 @@ export class WorkoutService {
     }
   }
 
+  async removeWorkoutsFromCycle(cycleId: number, assignWorkoutsToCycleDTO: AssignWorkoutsToCycleDTO) {
+    const queryRunner = this.dataSource.createQueryRunner();
+  
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  
+    try {
+      // Obtener los ciclos de entrenamiento con las relaciones necesarias
+      let deleted: DeleteResult = {
+        raw: [],
+        affected: 0
+      };
+      const trainingCycle = await this.trainingCycleRepository.findOne({
+        where: { id: cycleId },
+        relations: [
+          'trainingWeeks',
+          'trainingWeeks.trainingSessions',
+          'trainingWeeks.trainingSessions.workoutInstances',
+          'trainingWeeks.trainingSessions.workoutInstances.groups',
+          'trainingWeeks.trainingSessions.workoutInstances.groups.exercises',
+        ],
+      });
+  
+      if (!trainingCycle) {
+        throw new HttpException('Training cycle not found', HttpStatus.NOT_FOUND);
+      }
+  
+      // Filtrar las sesiones de entrenamiento que coinciden con el dayOfWeek y workoutId
+      for (const assignment of assignWorkoutsToCycleDTO.assignments) {
+        const { workoutId, dayOfWeek } = assignment;
+  
+        const sessionsToRemove = trainingCycle.trainingWeeks.flatMap((week) =>
+          week.trainingSessions.filter(
+            (session) =>
+              session.dayNumber === dayOfWeek &&
+              session.workoutInstances.some(
+                (instance) => instance.workout.id === workoutId && !instance.isTemplate && instance.status !== 'completed'
+              )
+          )
+        );
+
+        for (const session of sessionsToRemove) {
+          for (const instance of session.workoutInstances) {
+            if (instance.workout.id === workoutId && !instance.isTemplate) {
+              // Eliminar las instancias de ejercicios
+              for (const group of instance.groups) {
+                for (const exercise of group.exercises) {
+                  await this.exerciseInstanceRepository.delete(exercise.id);
+                }
+              }
+  
+              // Eliminar los grupos
+              for (const group of instance.groups) {
+                await this.exerciseGroupRepository.delete(group.id);
+              }
+  
+              // Eliminar la instancia de workout
+              deleted = await this.workoutInstanceRepository.delete(instance.id);
+            }
+          }
+        }
+      }
+  
+      await queryRunner.commitTransaction();
+      return deleted
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(`Error removing workouts from cycle: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    } finally {
+      await queryRunner.release();
+    }
+  }
   async getWorkoutInstanceWithFeedback(workoutId: number): Promise<any> {
     const workout = await this.workoutInstanceRepository.findOne({
       where: { id: workoutId },
@@ -1183,7 +1301,7 @@ export class WorkoutService {
             const sessionDate = new Date(weekStartDate.getTime() + j * 24 * 60 * 60 * 1000);
             const trainingSession = queryRunner.manager.create(TrainingSession, {
               trainingWeek: savedWeek,
-              dayNumber: j + 1,
+              dayNumber: this.getDayOfWeek(sessionDate),
               sessionDate: sessionDate,
             });
             await queryRunner.manager.save(TrainingSession, trainingSession);

@@ -95,6 +95,13 @@ export class WorkoutController {
   findAllCoachWorkoutsByUserId(@Param('userId') userId: number) {
     return this.workoutService.findAllCoachWorkoutsByUserId(userId);
   }
+  @Get('/training-cycle/:cycleId/day/:dayNumber')
+  async getTrainingCyclesByCycleIdAndDayNumber(
+    @Param('cycleId') cycleId: number,
+    @Param('dayNumber') dayNumber: number,
+  ) {
+    return await this.workoutService.findTrainingCyclesByCycleIdAndDayNumber(cycleId, dayNumber);
+  }
 
   @Post()
   create(@Body() createWorkoutDto: CreateWorkoutDto) {
@@ -141,12 +148,12 @@ export class WorkoutController {
   }
 
   @Put('/template/:id')
-  updateWorkoutTemplate(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
+  updateWorkoutTemplate(@Body() updateWorkoutDto: UpdateWorkoutDto) {
     return this.workoutService.updateWorkoutTemplate(updateWorkoutDto);
   }
 
   @Put('/instance/:id')
-  updateWorkoutInstance(@Param('id') id: string, @Body() updateWorkoutDto: UpdateWorkoutDto) {
+  updateWorkoutInstance(@Body() updateWorkoutDto: UpdateWorkoutDto) {
     return this.workoutService.updateWorkoutInstance(updateWorkoutDto);
   }
 
@@ -159,5 +166,13 @@ export class WorkoutController {
   @Delete('/deleteInstance/:instanceId')
   removeWorkoutInstance(@Param('instanceId') instanceId: number) {
     return this.workoutService.removeWorkoutInstance(instanceId);
+  }
+
+  @Delete('/delete-instances-cycle/:cycleId')
+  removeWorkoutsFromCycle(
+    @Param('cycleId') cycleId: number,
+    @Body() assignWorkoutsToCycleDTO: AssignWorkoutsToCycleDTO,
+  ) {
+    return this.workoutService.removeWorkoutsFromCycle(cycleId, assignWorkoutsToCycleDTO);
   }
 }

@@ -54,7 +54,7 @@ export interface IWorkoutInstance {
   realStartedDate?: Date;
   realEndDate?: Date;
   groups: IExerciseGroup[];
-  sessionTime: Date;
+  sessionTime: string;
   generalFeedback: string;
   energyLevel: number;
   mood: number;
@@ -118,8 +118,8 @@ export class WorkoutInstance implements IWorkoutInstance {
   @OneToMany(() => ExerciseGroup, (group) => group.workoutInstance, { cascade: true, eager: true })
   groups: ExerciseGroup[];
 
-  @Column({ type: 'time', nullable: true })
-  sessionTime: Date;
+  @Column({ nullable: true })
+  sessionTime: string;
 
   @Column({ nullable: true })
   generalFeedback: string;
