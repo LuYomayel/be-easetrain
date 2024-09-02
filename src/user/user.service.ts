@@ -53,6 +53,23 @@ export class UserService {
     return await this.userRepository.findOne({ where: { id } });
   }
 
+  async findByToken(token: string): Promise<User> {
+    try {
+      const decoded = this.jwtService.verify(token); // Verifica y decodifica el token JWT
+
+      const userId = decoded.userId; // 'sub' es el campo estándar para el ID de usuario en el payload del JWT
+
+      const user = await this.findOne(userId);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      return user;
+    } catch (error) {
+      console.log('Error verifying token:', error);
+      throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+    }
+  }
+
   async findOneByEmail(email: string) {
     return await this.userRepository.findOne({ where: { email } });
   }
@@ -80,7 +97,7 @@ export class UserService {
     }
     const client = await this.clientRepository.findOne({
       where: { user: { id: user.id } },
-      relations: ['user', 'user.subscription'],
+      relations: ['user', 'user.subscription', 'coach', 'coach.user'],
     });
     return client;
   }

@@ -12,6 +12,7 @@ import { ClientSubscription } from '../../subscription/entities/client.subscript
 import { CoachSubscription } from '../../subscription/entities/coach.subscription.entity';
 import { Subscription } from '../../subscription/entities/subscription.entity';
 import { ClientActivity } from './client-activity.entity';
+import { Message } from '../../messages/entities/message.entity';
 
 export enum EUserType {
   COACH = 'coach',
@@ -82,4 +83,10 @@ export class User implements IUser {
 
   @OneToMany(() => ClientActivity, (clientActivity) => clientActivity.user)
   activities: ClientActivity[];
+
+  @OneToMany(() => Message, message => message.sender)
+  sentMessages: Message[];
+
+  @OneToMany(() => Message, message => message.receiver)
+  receivedMessages: Message[];
 }

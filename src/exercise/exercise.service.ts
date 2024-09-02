@@ -25,7 +25,6 @@ export class ExerciseService {
 
     queryRunner.connect();
     queryRunner.startTransaction();
-    console.log('Create dto: ', createExerciseDto)
     try {
       // Buscar el usuario, agregarlo al ejercicio y guardarlo,
       const coach = await this.userService.findCoachByUserId(createExerciseDto.coachId);
@@ -75,7 +74,18 @@ export class ExerciseService {
 
   async findExercisesByCoachUserId(userId: number){
     try {
-      return await this.exerciseRepository.find({where: { coach: { user: { id: userId} } }, relations: ['coach', 'exerciseBodyAreas', 'exerciseBodyAreas.bodyArea'] } )
+      return await this.exerciseRepository.find( 
+        {
+        where: 
+        { coach: { 
+          user: { 
+            id: userId
+            } 
+          } 
+        }, 
+        relations: ['coach', 'exerciseBodyAreas', 'exerciseBodyAreas.bodyArea'] 
+        }
+      )
     } catch (error) {
       console.error(error)
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)

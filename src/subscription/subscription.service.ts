@@ -156,7 +156,8 @@ export class SubscriptionService {
     await queryRunner.startTransaction();
     try {
       const clientsSubscribed = await this.findClientsSubscribedToCoachByUserId(userId);
-      const coachSubscription = await this.findCoachSubscriptions(userId);
+      const coachSubscription = await this.findCoachSubscriptions(createClientSubscriptionDTO.coachId);
+      console.log(coachSubscription, createClientSubscriptionDTO.coachId)
       if(clientsSubscribed.length >= coachSubscription.subscriptionPlan.max_clients)
         throw new HttpException(`Your plan allows you to have just ${coachSubscription.subscriptionPlan.max_clients} at the same time.`, HttpStatus.CONFLICT)
       const { coachPlanId, clientId, startDate, endDate } = createClientSubscriptionDTO;

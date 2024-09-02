@@ -15,6 +15,8 @@ import { AuthModule } from './auth/auth.module';
 import { EmailService } from './email/email.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ImportModule } from './import/import.module';
+import { MessagesModule } from './messages/messages.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -45,7 +47,9 @@ import { ImportModule } from './import/import.module';
     PaymentModule,
     ExerciseModule,
     AuthModule,
-    ImportModule
+    ImportModule,
+    MessagesModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService, EmailService],
