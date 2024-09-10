@@ -367,6 +367,144 @@ export class UserService {
     });
   }
 
+  async getRecentActivityByCoach(coachId: number): Promise<ClientActivity[]> {
+    const coach = await this.coachRepository.findOne({
+      where: { id: coachId },
+    });
+    if (!coach) {
+      throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+    }
+    
+    const act = await this.clientActivityRepository.find({
+      where: { user: { client: { coach: { id: coach.id } }} },
+      order: { timestamp: 'DESC' },
+      take: 5,
+      relations: ['user', 'user.client', 'user.client.coach'],
+    });
+    return act;
+  }
+
+  async getWorkoutProgressByCoach(coachId: number) {
+    const coach = await this.coachRepository.findOne({
+        where: { id: coachId },
+    });
+    if (!coach) {
+        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+    }
+
+    const clients = await this.clientRepository.find({
+        where: { coach: { id: coach.id } },
+        relations: [
+            'user',
+            'user.subscription',
+            'user.subscription.clientSubscription',
+            'user.subscription.clientSubscription.workoutInstances',
+            'user.subscription.clientSubscription.workoutInstances.trainingSession',
+        ],
+    });
+
+    const now = new Date();
+
+    const progress = clients.map((client) => {
+        const workoutInstances = client.user.subscription.clientSubscription.workoutInstances;
+
+        // Determinar el estado de cada WorkoutInstance
+        const progress = workoutInstances.map((instance) => {
+            let status;
+
+            // Verificamos la fecha de la sesión de entrenamiento
+            const sessionDate = instance.trainingSession?.sessionDate
+                ? new Date(instance.trainingSession.sessionDate)
+                : null;
+
+            // Si ya fue completado
+            if (instance.status === 'completed') {
+                status = 'Completed';
+            }
+            // Si el estado es 'pending' y la fecha de la sesión no ha pasado
+            else if (instance.status === 'pending' && sessionDate && now <= sessionDate) {
+                status = 'Pending';
+            }
+            // Si el estado es 'pending' pero la fecha de la sesión ya pasó
+            else if (instance.status === 'pending' && sessionDate && now > sessionDate) {
+                status = 'Expired';
+            }
+            // Si no se encuentra ninguna sesión o algún otro error
+            else {
+              console.log(instance.status)
+                status = 'Unknown';
+            }
+
+            return {
+                workout: instance.workout.planName,
+                status, // Completado, Pendiente o Expirado
+            };
+        });
+
+        return {
+            client: client.user.email,
+            progress,
+        };
+    });
+
+    return progress;
+}
+
+
+  async getNextSessionForEachClient(coachId: number) {
+    const coach = await this.coachRepository.findOne({
+        where: { id: coachId },
+    });
+    if (!coach) {
+        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+    }
+
+    const clients = await this.clientRepository.find({
+        where: { coach: { id: coach.id } },
+        relations: [
+            'user', 
+            'user.subscription', 
+            'user.subscription.clientSubscription', 
+            'user.subscription.clientSubscription.workoutInstances',
+            'user.subscription.clientSubscription.workoutInstances.trainingSession'
+        ],
+    });
+
+    // Obtener la fecha actual para comparar
+    const now = new Date();
+
+    const sessions = clients.map((client) => {
+        const workoutInstances = client.user.subscription.clientSubscription.workoutInstances;
+
+        // Filtramos las instancias que están en estado 'pending' y cuya sesión no ha expirado
+        const pendingSessions = workoutInstances.filter((instance) => {
+            const sessionDate = instance.trainingSession?.sessionDate;
+            return (
+                instance.status === 'pending' && // Estado 'pending' (en minúscula)
+                sessionDate && // Aseguramos que la sesión tiene una fecha asignada
+                new Date(sessionDate) > now // La sesión aún no ha expirado
+            );
+        });
+
+        // Ordenamos las sesiones pendientes por fecha de la sesión
+        pendingSessions.sort((a, b) => {
+            const dateA = new Date(a.trainingSession.sessionDate);
+            const dateB = new Date(b.trainingSession.sessionDate);
+            return dateA.getTime() - dateB.getTime();
+        });
+
+        // Tomamos la primera sesión pendiente o null si no hay ninguna
+        const nextSession = pendingSessions.length > 0 ? pendingSessions[0].trainingSession.sessionDate : null;
+
+        return {
+            client: client.name,
+            nextSession,
+        };
+    });
+
+    console.log(sessions);
+    return sessions;
+}
   async logActivity(userId: number, description: string): Promise<ClientActivity> {
     try {
       const user = await this.userRepository.findOne({where :{ id: userId}});

@@ -45,4 +45,8 @@ export class MessagesController {
     return this.messagesService.markAsRead(id);
   }
 
+  @Get('coach/:coachId/last-messages')
+  async getLastMessages(@Param('coachId') coachId: number) {
+    return this.messagesService.getLastMessagesForCoach(coachId);
+  }
 }

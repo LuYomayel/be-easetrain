@@ -129,4 +129,25 @@ export class UserController {
   async getUserActivitiesClientId(@Param('id') userId: number) {
     return this.userService.getUserActivitiesClientId(userId);
   }
+
+  // GET /api/coaches/:coachId/recent-activity
+  @Get('/coachId/:coachId/recent-activity')
+  async getRecentActivity(@Param('coachId') coachId: number) {
+    const recentActivity = await this.userService.getRecentActivityByCoach(coachId);
+    return recentActivity;
+  }
+
+  // GET /api/coaches/:coachId/workout-progress
+  @Get('/coachId/:coachId/workout-progress')
+  async getWorkoutProgress(@Param('coachId') coachId: number) {
+    const progress = await this.userService.getWorkoutProgressByCoach(coachId);
+    return progress;
+  }
+
+  @Get('/coachId/:coachId/upcoming-sessions')
+async getUpcomingSessions(@Param('coachId') coachId: number) {
+  const sessions = await this.userService.getNextSessionForEachClient(coachId);
+  return sessions;
+}
+
 }

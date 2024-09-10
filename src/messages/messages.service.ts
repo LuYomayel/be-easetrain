@@ -42,4 +42,13 @@ export class MessagesService {
   async markAsRead(messageId: number): Promise<void> {
     await this.messageRepository.update(messageId, { isRead: true });
   }
+
+  async getLastMessagesForCoach(coachId: number): Promise<Message[]> {
+    return await this.messageRepository.find({
+      where: { receiver: { id: coachId } },
+      order: { timestamp: 'DESC' },
+      take: 3,
+      relations: ['sender', 'receiver', 'sender.client'],
+    });
+  }
 }
