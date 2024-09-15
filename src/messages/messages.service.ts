@@ -23,16 +23,12 @@ export class MessagesService {
   }
 
   async getMessagesBetweenUsers(user1: User, user2: User, limit: number, page: number): Promise<Message[]> {
-    console.log('user1', user1);  
-    console.log('user2', user2);
-    console.log('limit', limit);
-    console.log('page', page);
     return await this.messageRepository.find({
       where: [
         { sender: user1, receiver: user2 },
         { sender: user2, receiver: user1 },
       ],
-      order: { timestamp: 'DESC' },
+      order: { timestamp: 'ASC' },
       relations: ['sender', 'receiver'],
       take: limit,
       skip: limit * (page - 1),
