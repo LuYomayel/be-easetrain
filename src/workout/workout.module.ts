@@ -14,6 +14,7 @@ import { UserModule } from '../user/user.module';
 import { TrainingCycle } from './entities/training-cycle.entity';
 import { TrainingSession } from './entities/training-session.entity';
 import { ExerciseSetLog } from '../exercise/entities/exercise-set-log.entity';
+import OpenAI from 'openai';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -34,6 +35,6 @@ import { ExerciseSetLog } from '../exercise/entities/exercise-set-log.entity';
     UserModule
   ],
   controllers: [WorkoutController],
-  providers: [WorkoutService],
+  providers: [WorkoutService, OpenAI],
 })
 export class WorkoutModule {}

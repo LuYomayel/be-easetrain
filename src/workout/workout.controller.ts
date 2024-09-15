@@ -7,11 +7,14 @@ import {
   Param,
   Delete,
   Put,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { WorkoutService } from './workout.service';
 import { CreateWorkoutDto, AssignWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { CreateFeedbackDto } from './dto/create-feedback-dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AssignWorkoutsToCycleDTO, CreateCycleDto } from './entities/create-cycle.dto';
 
 @Controller('workout')
@@ -174,5 +177,13 @@ export class WorkoutController {
     @Body() assignWorkoutsToCycleDTO: AssignWorkoutsToCycleDTO,
   ) {
     return this.workoutService.removeWorkoutsFromCycle(cycleId, assignWorkoutsToCycleDTO);
+  }
+
+  @Post('/import-plan-from-image')
+  @UseInterceptors(FileInterceptor('file'))
+  async importPlanFromImage(@UploadedFile() file: Express.Multer.File) {
+  // async importPlanFromImage(@UploadedFile() image: Express.Multer.File) {
+    console.log('Imagen',file);
+    return await this.workoutService.importPlanFromImage(file);
   }
 }

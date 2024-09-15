@@ -20,7 +20,10 @@ import { TrainingCycle } from './entities/training-cycle.entity';
 import { TrainingWeek } from './entities/training-week.entity';
 import { TrainingSession } from './entities/training-session.entity';
 import { ExerciseSetLog } from '../exercise/entities/exercise-set-log.entity';
-import { format } from 'date-fns';
+import { OpenAI } from 'openai';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import * as FormData from 'form-data';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -53,9 +56,15 @@ export class WorkoutService {
     @InjectRepository(ExerciseSetLog)
     private exerciseSetLogRepository: Repository<ExerciseSetLog>,
     
-    @InjectDataSource() private readonly dataSource: DataSource
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private openai: OpenAI,
+    private configService: ConfigService,
+  ) {
+    this.openai = new OpenAI({
+      apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+    });
     
-  ) {}
+  }
 
   async create(createWorkoutDto: CreateWorkoutDto) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -1318,4 +1327,122 @@ export class WorkoutService {
       await queryRunner.release();
     }
   }
+
+  async importPlanFromImage(image: Express.Multer.File): Promise<CreateWorkoutDto> {
+    try {
+      // Enviar la imagen directamente a la API de OpenAI
+      console.log('Image:', image); 
+      const planObject = await this.getPlanFromImage(image);
+
+      // Ajustar la estructura del plan según sea necesario
+      const adjustedPlan = this.adjustPlanStructure(planObject);
+
+      return adjustedPlan;
+    } catch (error) {
+      throw new HttpException(
+        `Error al importar el plan desde la imagen: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async getPlanFromImage(image: Express.Multer.File): Promise<any> {
+    try {
+      // Prepara los mensajes para la API de OpenAI  
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: `You are an assistant that extracts workout plans from images and returns them as structured JSON objects. 
+              Keep in mind that the format implemented in my database for workouts is as follows:
+              {
+                workout: {
+                  id: '',
+                  planName: '',
+                  coach: {
+                    id: '',
+                    user: {
+                      id: 'user.userId'
+                    }
+                  }
+                },
+                personalizedNotes: '',
+                groups: [
+                  {
+                    set: '', // MUST BE A NUMBER
+                    rest: '', // MUST BE A NUMBER. Rest and Reps are not the same. BE CAREFUL.
+                    groupNumber: plan.groups.length + 1,
+                    exercises: [
+                      {
+                        id: '',
+                        exercise: {
+                          id: '',
+                          name: ''
+                        },
+                        // Any of the following fields can be empty so if they are not present in the plan, they will be null in the JSON
+                        // If there is a string in the plan, consider to put it in the notes field unless you know where it should go
+                        repetitions: '', // Can be found in the plan as reps, reps x sets, reps x sets x weight, etc.
+                        sets: '',
+                        time: '',
+                        weight: '',
+                        restInterval: '',
+                        tempo: '',
+                        notes: '',
+                        difficulty: '',
+                        duration: '',
+                        distance: '', 
+                      }
+                    ]
+                  }
+                ]
+              };
+              ` },
+              {
+                type: "image_url",
+                image_url: {
+                  "url": `data:${image.mimetype};base64,${image.buffer.toString('base64')}`,
+                },
+              }
+            ],
+          },
+        ],
+      });
+
+      // Extraer el mensaje del asistente
+      const assistantMessage = response.choices[0].message?.content?.trim();
+      console.log('Assistant message:', assistantMessage);
+      if (!assistantMessage) {
+        throw new Error('No response received from OpenAI API.');
+      }
+
+      // Extraer y parsear el JSON del mensaje del asistente
+      const jsonStartIndex = assistantMessage.indexOf('{');
+      const jsonEndIndex = assistantMessage.lastIndexOf('}') + 1;
+      const jsonString = assistantMessage.substring(jsonStartIndex, jsonEndIndex);
+
+      try {
+        // Parsear el string a JSON
+        const planObject = JSON.parse(jsonString);
+        console.log('Plan object:', planObject);
+        return planObject;  // Devuelve el JSON al frontend para su manipulación
+      } catch (error) {
+        throw new Error('Failed to parse plan JSON from OpenAI response.');
+      }
+    } catch (error) {
+      throw new Error(`Error processing image with OpenAI API: ${error.message}`);
+    }
+  }
+
+  private adjustPlanStructure(planObject: any): CreateWorkoutDto {
+    // Ajustar el objeto del plan según la estructura que necesites
+    const adjustedPlan: any = {
+      ...planObject,
+      // Aquí puedes agregar cualquier ajuste necesario para que el formato sea compatible
+    };
+
+    return adjustedPlan;
+  }
+
 }
