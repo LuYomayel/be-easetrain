@@ -122,16 +122,16 @@ export class WorkoutService {
           const exerciseInstanceData = {
             exercise: { id: exerciseDto.exercise.id }, // Relación a la entidad Exercise
             group: savedGroup,
-            repetitions: exerciseDto.repetitions,
-            sets: exerciseDto.sets,
-            time: exerciseDto.time,
-            weight: exerciseDto.weight,
-            restInterval: exerciseDto.restInterval,
-            tempo: exerciseDto.tempo,
-            notes: exerciseDto.notes,
-            difficulty: exerciseDto.difficulty,
-            duration: exerciseDto.duration,
-            distance: exerciseDto.distance,
+            repetitions: exerciseDto.repetitions === '' ? null : exerciseDto.repetitions,
+            sets: exerciseDto.sets === '' ? null : exerciseDto.sets,
+            time: exerciseDto.time === '' ? null : exerciseDto.time,
+            weight: exerciseDto.weight === '' ? null : exerciseDto.weight,
+            restInterval: exerciseDto.restInterval === '' ? null : exerciseDto.restInterval,
+            tempo: exerciseDto.tempo === '' ? null : exerciseDto.tempo,
+            notes: exerciseDto.notes === '' ? null : exerciseDto.notes,
+            difficulty: exerciseDto.difficulty === '' ? null : exerciseDto.difficulty,
+            duration: exerciseDto.duration === '' ? null : exerciseDto.duration,
+            distance: exerciseDto.distance === '' ? null : exerciseDto.distance,
           };
           const exerciseInstance = queryRunner.manager.create(
             ExerciseInstance,

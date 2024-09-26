@@ -51,4 +51,9 @@ export class AuthController {
     // return {email, password};
     return this.authService.signUp(email, password);
   }
+
+  @Post('send-verification-email')
+  async sendVerificationEmail(@Body('email') email: string) {
+    return this.authService.sendVerificationEmail(email);
+  }
 }

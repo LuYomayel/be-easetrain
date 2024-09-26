@@ -71,6 +71,36 @@ export class AuthService {
     }
 }
 
+  async sendVerificationEmail(email: string): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const user = await this.userService.findByEmail(email);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      const token = this.jwtService.sign({ email });
+      const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+      try {
+        await this.emailService.sendVerificationEmail(email, verificationLink);
+      } catch (emailError) {
+        console.error('Error sending verification email:', emailError);
+          throw new HttpException('Error sending verification email', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+        console.error('Transaction error:', error);
+        await queryRunner.rollbackTransaction();
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    } finally {
+        await queryRunner.release();
+    }
+  }
+
   async verifyEmail(token: string){ 
     const queryRunner = this.dataSource.createQueryRunner();
 
