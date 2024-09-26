@@ -405,4 +405,35 @@ export class SubscriptionService {
     }
   }
   
+  async updateCoachSubscription(userId: number, planId: number){
+    const queryRunner = this.dataSource.createQueryRunner()
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const coach = await this.userService.findCoachByUserId(userId);
+      if (!coach) {
+        throw new HttpException('Coach not found', HttpStatus.NOT_FOUND);
+      }
+      const subscriptionPlan = await this.subscriptionPlanRepository.findOne({where: {id: planId}})
+      if (!subscriptionPlan) {
+        throw new HttpException('Subscription plan not found', HttpStatus.NOT_FOUND);
+      }
+      const coachSubscription = await this.coachSubscriptionRepository.findOne({where: {coach: {id: coach.id}}})
+      if (!coachSubscription) {
+        throw new HttpException('Coach subscription not found', HttpStatus.NOT_FOUND);
+      }
+      await queryRunner.manager.update(CoachSubscription, {id: coachSubscription.id}, {
+        subscriptionPlan
+      })
+      await queryRunner.commitTransaction();
+      return await this.coachSubscriptionRepository.findOne({where: {coach: {id: coach.id}}})
+    } catch (error) {
+      console.log(error)
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    }finally{
+      await queryRunner.release();
+    }
+  }
 }

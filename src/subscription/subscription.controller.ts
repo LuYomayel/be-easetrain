@@ -49,6 +49,7 @@ export class SubscriptionController {
     );
   }
 
+
   @Get()
   findAll() {
     return this.suscriptionService.findAll();
@@ -99,6 +100,11 @@ export class SubscriptionController {
     @Body() updateSubscriptionDto: UpdateSubscriptionDTO
   ){
     return await this.suscriptionService.setPayment(updateSubscriptionDto);
+  }
+
+  @Put('coach-subscription')
+  updateCoachSubscription(@Body('userId') userId: number, @Body('planId') planId: number) {
+    return this.suscriptionService.updateCoachSubscription(userId, planId);
   }
   
 }
