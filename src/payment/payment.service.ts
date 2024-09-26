@@ -9,7 +9,6 @@ export class PaymentService {
   private stripe: Stripe;
 
   constructor(private configService: ConfigService) {
-    console.log('Stripe secret key:', this.configService.get<string>('STRIPE_SECRET_KEY'));
     this.stripe = new Stripe(this.configService.get<string>('STRIPE_SECRET_KEY'), {
       apiVersion: '2024-06-20',
     });
@@ -22,6 +21,9 @@ export class PaymentService {
         currency: 'usd',
         payment_method: paymentMethodId,
         confirm: true,
+        automatic_payment_methods: {
+          enabled: true,
+        },
       });
 
       return {
