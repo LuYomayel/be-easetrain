@@ -1,26 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import Stripe from 'stripe';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PaymentService {
-  create(createPaymentDto: CreatePaymentDto) {
-    return 'This action adds a new payment';
+  private stripe: Stripe;
+
+  constructor(private configService: ConfigService) {
+    this.stripe = new Stripe(this.configService.get<string>('STRIPE_SECRET_KEY'), {
+      apiVersion: '2024-06-20',
+    });
+  }
+  async createPaymentIntent(paymentMethodId: string, amount: number) {
+    try {
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount, // El monto debe estar en centavos (5000 = $50)
+        currency: 'usd',
+        payment_method: paymentMethodId,
+        confirm: true,
+      });
+
+      return {
+        success: true,
+        paymentIntent,
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Error creating payment intent: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
-  findAll() {
-    return `This action returns all payment`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} payment`;
-  }
-
-  update(id: number, updatePaymentDto: UpdatePaymentDto) {
-    return `This action updates a #${id} payment`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} payment`;
-  }
 }

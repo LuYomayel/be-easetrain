@@ -7,28 +7,9 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentService.create(createPaymentDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.paymentService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto) {
-    return this.paymentService.update(+id, updatePaymentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentService.remove(+id);
+  @Post('create-payment-intent')
+  async createPaymentIntent(@Body() body: { paymentMethodId: string; amount: number }) {
+    const { paymentMethodId, amount } = body;
+    return this.paymentService.createPaymentIntent(paymentMethodId, amount);
   }
 }
