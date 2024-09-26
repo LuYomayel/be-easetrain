@@ -53,7 +53,10 @@ export class AuthController {
   }
 
   @Post('send-verification-email')
-  async sendVerificationEmail(@Body('email') email: string) {
+  async sendVerificationEmail(
+    @Body('email') email: string
+    ) {
+      console.log('Email en el controller: ', email);
     return this.authService.sendVerificationEmail(email);
   }
 }
