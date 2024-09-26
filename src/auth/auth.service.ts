@@ -78,6 +78,7 @@ export class AuthService {
     await queryRunner.startTransaction();
     try {
       const user = await this.userService.findByEmail(email);
+      console.log('User:', user);
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
@@ -85,6 +86,8 @@ export class AuthService {
       const token = this.jwtService.sign({ email });
       const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
       try {
+        console.log('Sending verification email to:', email);
+        
         await this.emailService.sendVerificationEmail(email, verificationLink);
       } catch (emailError) {
         console.error('Error sending verification email:', emailError);

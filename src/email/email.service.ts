@@ -26,7 +26,7 @@ export class EmailService {
 
     async sendVerificationEmail(to: string, token: string) {
         const verificationUrl = `${this.env.frontEnd_url}/verify-email?token=${token}`;
-    
+        console.log('Recipient:   ', to);
         const mailOptions = {
           from: '<No Responder>',
           to,
