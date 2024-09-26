@@ -9,12 +9,14 @@ export class PaymentService {
   private stripe: Stripe;
 
   constructor(private configService: ConfigService) {
+    console.log('Stripe secret key:', this.configService.get<string>('STRIPE_SECRET_KEY'));
     this.stripe = new Stripe(this.configService.get<string>('STRIPE_SECRET_KEY'), {
       apiVersion: '2024-06-20',
     });
   }
   async createPaymentIntent(paymentMethodId: string, amount: number) {
     try {
+
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount, // El monto debe estar en centavos (5000 = $50)
         currency: 'usd',
