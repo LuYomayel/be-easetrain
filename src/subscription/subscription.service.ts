@@ -149,13 +149,13 @@ export class SubscriptionService {
     }
     
   }
-  async createClientSubscription(createClientSubscriptionDTO: CreateClientSubscriptionDTO, userId: number): Promise<ClientSubscription> {
+  async createClientSubscription(createClientSubscriptionDTO: CreateClientSubscriptionDTO): Promise<ClientSubscription> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const clientsSubscribed = await this.findClientsSubscribedToCoachByUserId(userId);
+      const clientsSubscribed = await this.findClientsSubscribedToCoachByUserId(createClientSubscriptionDTO.userId);
       const coachSubscription = await this.findCoachSubscriptions(createClientSubscriptionDTO.coachId);
       console.log(coachSubscription, createClientSubscriptionDTO.coachId)
       if(clientsSubscribed.length >= coachSubscription.subscriptionPlan.max_clients)

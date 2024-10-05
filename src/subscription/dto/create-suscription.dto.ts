@@ -59,4 +59,8 @@ export class CreateClientSubscriptionDTO {
 
   @IsDateString({}, { message: 'End date must be a valid date string.' })
   endDate: string;
+
+  @IsNumber({}, { message: 'User ID must be a number.' })
+  @Min(1, { message: 'User ID must be a positive integer.' })
+  userId: number;
 }

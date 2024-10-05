@@ -37,15 +37,12 @@ export class SubscriptionController {
     return this.suscriptionService.deleteCoachPlan(coachPlanId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('client')
   createClientSubscription(
     @Body() createClientSubscriptionDTO: CreateClientSubscriptionDTO,
-    @Request() req,
   ) {
     return this.suscriptionService.createClientSubscription(
-      createClientSubscriptionDTO,
-      req.user.id
+      createClientSubscriptionDTO
     );
   }
 
