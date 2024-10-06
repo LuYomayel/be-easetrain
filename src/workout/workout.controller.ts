@@ -16,6 +16,7 @@ import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { CreateFeedbackDto } from './dto/create-feedback-dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AssignWorkoutsToCycleDTO, CreateCycleDto } from './entities/create-cycle.dto';
+import { CreateRpeDto } from './entities/create-rpe-dto';
 
 @Controller('workout')
 export class WorkoutController {
@@ -185,5 +186,24 @@ export class WorkoutController {
   // async importPlanFromImage(@UploadedFile() image: Express.Multer.File) {
     console.log('Imagen',file);
     return await this.workoutService.importPlanFromImage(file);
+  }
+
+
+  @Post('/rpe/create')
+  async createRpeMethod(@Body() createRpeDto: CreateRpeDto, @Param('coachId') coachId: number) {
+    return this.workoutService.createRpeMethod(createRpeDto, coachId);
+  }
+
+  @Post('/rpe/assign')
+  async assignRpeToTarget(
+    @Body() body: { rpeMethodId: number; targetType: string; targetId: number },
+    @Param('coachId') coachId: number,
+  ) {
+    return this.workoutService.assignRpeToTarget(body.rpeMethodId, body.targetType, body.targetId, coachId);
+  }
+
+  @Post('rpe/target/:type/:id')
+  async getRpeAssignmentsByTarget(@Param('type') targetType: string, @Param('id') targetId: number) {
+    return this.workoutService.getRpeAssignmentsByTarget(targetType, targetId);
   }
 }

@@ -15,6 +15,8 @@ import { TrainingCycle } from './entities/training-cycle.entity';
 import { TrainingSession } from './entities/training-session.entity';
 import { ExerciseSetLog } from '../exercise/entities/exercise-set-log.entity';
 import OpenAI from 'openai';
+import { RpeAssignment } from './entities/rpe-assignment.entity';
+import { RpeMethod } from './entities/rpe-method.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -30,7 +32,9 @@ import OpenAI from 'openai';
       ClientActivity,
       TrainingCycle,
       TrainingSession,
-      ExerciseSetLog
+      ExerciseSetLog,
+      RpeAssignment,
+      RpeMethod,
     ]),
     UserModule
   ],

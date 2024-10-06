@@ -24,6 +24,9 @@ import { OpenAI } from 'openai';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as FormData from 'form-data';
+import { RpeAssignment } from './entities/rpe-assignment.entity';
+import { RpeMethod } from './entities/rpe-method.entity';
+import { CreateRpeDto } from './entities/create-rpe-dto';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -55,6 +58,10 @@ export class WorkoutService {
     private trainingSessionRepository: Repository<TrainingSession>,
     @InjectRepository(ExerciseSetLog)
     private exerciseSetLogRepository: Repository<ExerciseSetLog>,
+    @InjectRepository(RpeAssignment)
+    private rpeAssignmentRepository: Repository<RpeAssignment>,
+    @InjectRepository(RpeMethod)
+    private rpeMethodRepository: Repository<RpeMethod>,
     
     @InjectDataSource() private readonly dataSource: DataSource,
     private openai: OpenAI,
@@ -1443,6 +1450,35 @@ export class WorkoutService {
     };
 
     return adjustedPlan;
+  }
+
+  async createRpeMethod(createRpeDto: CreateRpeDto, coachId: number): Promise<RpeMethod> {
+    const { name, minValue, maxValue, step, valuesMeta } = createRpeDto;
+
+    const newRpeMethod = this.rpeMethodRepository.create({
+      name,
+      minValue,
+      maxValue,
+      step,
+      valuesMeta,
+      createdBy: { id: coachId },
+    });
+
+    return await this.rpeMethodRepository.save(newRpeMethod);
+  }
+
+  async assignRpeToTarget(rpeMethodId: number, targetType: string, targetId: number, coachId: number): Promise<RpeAssignment> {
+    const rpeAssignment = this.rpeAssignmentRepository.create({
+      rpeMethod: { id: rpeMethodId },
+      targetType,
+      targetId,
+      assignedBy: { id: coachId },
+    });
+    return await this.rpeAssignmentRepository.save(rpeAssignment);
+  }
+
+  async getRpeAssignmentsByTarget(targetType: string, targetId: number): Promise<RpeAssignment[]> {
+    return await this.rpeAssignmentRepository.find({ where: { targetType, targetId }, relations: ['rpeMethod'] });
   }
 
 }

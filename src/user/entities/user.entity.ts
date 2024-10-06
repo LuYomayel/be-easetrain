@@ -13,6 +13,8 @@ import { CoachSubscription } from '../../subscription/entities/coach.subscriptio
 import { Subscription } from '../../subscription/entities/subscription.entity';
 import { ClientActivity } from './client-activity.entity';
 import { Message } from '../../messages/entities/message.entity';
+import { RpeAssignment } from '../../workout/entities/rpe-assignment.entity';
+import { RpeMethod } from '../../workout/entities/rpe-method.entity';
 
 export enum EUserType {
   COACH = 'coach',
@@ -32,6 +34,8 @@ export interface IUser {
   clientSubscriptions: ClientSubscription[];
   coachSubscriptions: CoachSubscription[];
   subscription: Subscription;
+  rpeAssignments: RpeAssignment[];
+  rpeMethods: RpeMethod[];
 }
 
 @Entity()
@@ -89,4 +93,10 @@ export class User implements IUser {
 
   @OneToMany(() => Message, message => message.receiver)
   receivedMessages: Message[];
+
+  @OneToMany(() => RpeAssignment, (rpeAssignment) => rpeAssignment.assignedBy)
+  rpeAssignments: RpeAssignment[];
+
+  @OneToMany(() => RpeMethod, (rpeMethod) => rpeMethod.createdBy)
+  rpeMethods: RpeMethod[];
 }
