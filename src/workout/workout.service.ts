@@ -27,6 +27,7 @@ import * as FormData from 'form-data';
 import { RpeAssignment } from './entities/rpe-assignment.entity';
 import { RpeMethod } from './entities/rpe-method.entity';
 import { CreateRpeDto } from './entities/create-rpe-dto';
+import { UpdateRpeDto } from './entities/update-rpe-dto';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -1452,6 +1453,14 @@ export class WorkoutService {
     return adjustedPlan;
   }
 
+  async getRpeMethodsForCoach(coachId: number): Promise<RpeMethod[]> {
+    return await this.rpeMethodRepository.find({ where: { createdBy: { id: coachId } } });
+  }
+
+  async getRpeMethodById(rpeMethodId: number): Promise<RpeMethod> {
+    return await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId } });
+  }
+
   async createRpeMethod(createRpeDto: CreateRpeDto, coachId: number): Promise<RpeMethod> {
     const { name, minValue, maxValue, step, valuesMeta } = createRpeDto;
 
@@ -1466,6 +1475,28 @@ export class WorkoutService {
 
     return await this.rpeMethodRepository.save(newRpeMethod);
   }
+
+  async updateRpeMethod(rpeMethodId: number, updateRpeDto: UpdateRpeDto, coachId: number): Promise<RpeMethod> {
+    const existingRpeMethod = await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId, createdBy: { id: coachId } } });
+  
+    if (!existingRpeMethod) {
+      throw new Error('RPE method not found or not authorized to update.');
+    }
+  
+    const updatedRpeMethod = Object.assign(existingRpeMethod, updateRpeDto);
+  
+    return await this.rpeMethodRepository.save(updatedRpeMethod);
+  }
+
+async deleteRpeMethod(rpeMethodId: number, coachId: number): Promise<void> {
+  const rpeMethodToDelete = await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId, createdBy: { id: coachId } } });
+
+  if (!rpeMethodToDelete) {
+    throw new Error('RPE method not found or not authorized to delete.');
+  }
+
+  await this.rpeMethodRepository.remove(rpeMethodToDelete);
+}
 
   async assignRpeToTarget(rpeMethodId: number, targetType: string, targetId: number, coachId: number): Promise<RpeAssignment> {
     const rpeAssignment = this.rpeAssignmentRepository.create({

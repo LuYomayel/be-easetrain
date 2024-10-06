@@ -17,6 +17,7 @@ import { CreateFeedbackDto } from './dto/create-feedback-dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AssignWorkoutsToCycleDTO, CreateCycleDto } from './entities/create-cycle.dto';
 import { CreateRpeDto } from './entities/create-rpe-dto';
+import { UpdateRpeDto } from './entities/update-rpe-dto';
 
 @Controller('workout')
 export class WorkoutController {
@@ -189,9 +190,36 @@ export class WorkoutController {
   }
 
 
+  @Get('/rpe/all/:coachId')
+  async getRpeMethodsForCoach(@Param('coachId') coachId: number) {
+    return this.workoutService.getRpeMethodsForCoach(coachId);
+  }
+
+  @Get('/rpe/:rpeMethodId')
+  async getRpeMethodById(@Param('rpeMethodId') rpeMethodId: number) {
+    return this.workoutService.getRpeMethodById(rpeMethodId);
+  }
+
   @Post('/rpe/create')
   async createRpeMethod(@Body() createRpeDto: CreateRpeDto, @Param('coachId') coachId: number) {
     return this.workoutService.createRpeMethod(createRpeDto, coachId);
+  }
+
+  @Put('/rpe/update/:rpeMethodId')
+  async updateRpeMethod(
+    @Param('rpeMethodId') rpeMethodId: number,
+    @Body() updateRpeDto: UpdateRpeDto,
+    @Param('coachId') coachId: number,
+  ) {
+    return this.workoutService.updateRpeMethod(rpeMethodId, updateRpeDto, coachId);
+  }
+
+  @Delete('/rpe/delete/:rpeMethodId')
+  async deleteRpeMethod(
+    @Param('rpeMethodId') rpeMethodId: number,
+    @Param('coachId') coachId: number,
+  ) {
+    return this.workoutService.deleteRpeMethod(rpeMethodId, coachId);
   }
 
   @Post('/rpe/assign')
