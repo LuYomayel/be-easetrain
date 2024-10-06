@@ -948,7 +948,7 @@ export class WorkoutService {
   }
   async findOne(workoutId: number) {
     try {
-      // Realizar la consulta principal de Workout Instance junto con todas las relaciones necesarias
+      // Consulta principal de Workout Instance junto con las relaciones necesarias
       const workout = await this.workoutInstanceRepository
         .createQueryBuilder('workoutInstance')
         .leftJoinAndSelect('workoutInstance.workout', 'workout')
@@ -957,7 +957,7 @@ export class WorkoutService {
         .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
         .leftJoinAndSelect('workoutInstance.trainingSession', 'trainingSession')
         .leftJoinAndSelect('trainingSession.trainingWeek', 'trainingWeek')
-        .leftJoinAndSelect('workoutInstance.trainingCycle', 'trainingCycle')
+        .leftJoinAndSelect('trainingWeek.trainingCycle', 'trainingCycle')  // Asegúrate de que esta relación está bien definida en la entidad y la base de datos
         .leftJoinAndSelect('workoutInstance.clientSubscription', 'clientSubscription')
         .leftJoinAndSelect('clientSubscription.client', 'client')
         .leftJoinAndSelect('client.user', 'user')
@@ -974,15 +974,19 @@ export class WorkoutService {
         relations: ['rpeMethod'],
       });
   
-      const trainingCycleRpeAssignment = await this.rpeAssignmentRepository.findOne({
-        where: { targetType: 'trainingCycle', targetId: workout.trainingSession.trainingWeek.trainingCycle.id },
-        relations: ['rpeMethod'],
-      });
+      const trainingCycleRpeAssignment = workout.trainingSession?.trainingWeek?.trainingCycle
+        ? await this.rpeAssignmentRepository.findOne({
+            where: { targetType: 'trainingCycle', targetId: workout.trainingSession.trainingWeek.trainingCycle.id },
+            relations: ['rpeMethod'],
+          })
+        : null;
   
-      const userRpeAssignment = await this.rpeAssignmentRepository.findOne({
-        where: { targetType: 'user', targetId: workout.clientSubscription.client.user.id },
-        relations: ['rpeMethod'],
-      });
+      const userRpeAssignment = workout.clientSubscription?.client?.user
+        ? await this.rpeAssignmentRepository.findOne({
+            where: { targetType: 'user', targetId: workout.clientSubscription.client.user.id },
+            relations: ['rpeMethod'],
+          })
+        : null;
   
       // Asignar el RPE correspondiente según las prioridades
       let assignedRpe;
