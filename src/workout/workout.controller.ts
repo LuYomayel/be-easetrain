@@ -200,34 +200,34 @@ export class WorkoutController {
     return this.workoutService.getRpeMethodById(rpeMethodId);
   }
 
-  @Post('/rpe/create')
-  async createRpeMethod(@Body() createRpeDto: CreateRpeDto, @Param('coachId') coachId: number) {
-    return this.workoutService.createRpeMethod(createRpeDto, coachId);
+  @Post('/rpe/create/:userId')
+  async createRpeMethod(@Body() createRpeDto: CreateRpeDto, @Param('userId') userId: number) {
+    return this.workoutService.createRpeMethod(createRpeDto, userId);
   }
 
-  @Put('/rpe/update/:rpeMethodId')
+  @Put('/rpe/update/:rpeMethodId/:userId')
   async updateRpeMethod(
     @Param('rpeMethodId') rpeMethodId: number,
     @Body() updateRpeDto: UpdateRpeDto,
-    @Param('coachId') coachId: number,
+    @Param('userId') userId: number,
   ) {
-    return this.workoutService.updateRpeMethod(rpeMethodId, updateRpeDto, coachId);
+    return this.workoutService.updateRpeMethod(rpeMethodId, updateRpeDto, userId);
   }
 
-  @Delete('/rpe/delete/:rpeMethodId')
+  @Delete('/rpe/delete/:rpeMethodId/:userId')
   async deleteRpeMethod(
     @Param('rpeMethodId') rpeMethodId: number,
-    @Param('coachId') coachId: number,
+    @Param('userId') userId: number,
   ) {
-    return this.workoutService.deleteRpeMethod(rpeMethodId, coachId);
+    return this.workoutService.deleteRpeMethod(rpeMethodId, userId);
   }
 
-  @Post('/rpe/assign')
+  @Post('/rpe/assign/:userId')
   async assignRpeToTarget(
     @Body() body: { rpeMethodId: number; targetType: string; targetId: number },
-    @Param('coachId') coachId: number,
+    @Param('userId') userId: number,
   ) {
-    return this.workoutService.assignRpeToTarget(body.rpeMethodId, body.targetType, body.targetId, coachId);
+    return this.workoutService.assignRpeToTarget(body.rpeMethodId, body.targetType, body.targetId, userId);
   }
 
   @Post('rpe/target/:type/:id')

@@ -1453,15 +1453,15 @@ export class WorkoutService {
     return adjustedPlan;
   }
 
-  async getRpeMethodsForCoach(coachId: number): Promise<RpeMethod[]> {
-    return await this.rpeMethodRepository.find({ where: { createdBy: { id: coachId } } });
+  async getRpeMethodsForCoach(userId: number): Promise<RpeMethod[]> {
+    return await this.rpeMethodRepository.find({ where: { createdBy: { id: userId } } });
   }
 
   async getRpeMethodById(rpeMethodId: number): Promise<RpeMethod> {
     return await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId } });
   }
 
-  async createRpeMethod(createRpeDto: CreateRpeDto, coachId: number): Promise<RpeMethod> {
+  async createRpeMethod(createRpeDto: CreateRpeDto, userId: number): Promise<RpeMethod> {
     const { name, minValue, maxValue, step, valuesMeta } = createRpeDto;
 
     const newRpeMethod = this.rpeMethodRepository.create({
@@ -1470,14 +1470,14 @@ export class WorkoutService {
       maxValue,
       step,
       valuesMeta,
-      createdBy: { id: coachId },
+      createdBy: { id: userId },
     });
 
     return await this.rpeMethodRepository.save(newRpeMethod);
   }
 
-  async updateRpeMethod(rpeMethodId: number, updateRpeDto: UpdateRpeDto, coachId: number): Promise<RpeMethod> {
-    const existingRpeMethod = await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId, createdBy: { id: coachId } } });
+  async updateRpeMethod(rpeMethodId: number, updateRpeDto: UpdateRpeDto, userId: number): Promise<RpeMethod> {
+    const existingRpeMethod = await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId, createdBy: { id: userId } } });
   
     if (!existingRpeMethod) {
       throw new Error('RPE method not found or not authorized to update.');
@@ -1488,8 +1488,8 @@ export class WorkoutService {
     return await this.rpeMethodRepository.save(updatedRpeMethod);
   }
 
-async deleteRpeMethod(rpeMethodId: number, coachId: number): Promise<void> {
-  const rpeMethodToDelete = await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId, createdBy: { id: coachId } } });
+async deleteRpeMethod(rpeMethodId: number, userId: number): Promise<void> {
+  const rpeMethodToDelete = await this.rpeMethodRepository.findOne({ where: { id: rpeMethodId, createdBy: { id: userId } } });
 
   if (!rpeMethodToDelete) {
     throw new Error('RPE method not found or not authorized to delete.');
@@ -1498,12 +1498,12 @@ async deleteRpeMethod(rpeMethodId: number, coachId: number): Promise<void> {
   await this.rpeMethodRepository.remove(rpeMethodToDelete);
 }
 
-  async assignRpeToTarget(rpeMethodId: number, targetType: string, targetId: number, coachId: number): Promise<RpeAssignment> {
+  async assignRpeToTarget(rpeMethodId: number, targetType: string, targetId: number, userId: number): Promise<RpeAssignment> {
     const rpeAssignment = this.rpeAssignmentRepository.create({
       rpeMethod: { id: rpeMethodId },
       targetType,
       targetId,
-      assignedBy: { id: coachId },
+      assignedBy: { id: userId },
     });
     return await this.rpeAssignmentRepository.save(rpeAssignment);
   }
