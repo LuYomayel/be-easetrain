@@ -948,6 +948,7 @@ export class WorkoutService {
   }
   async findOne(workoutId: number) {
     try {
+      // Realizar la consulta principal de Workout Instance junto con todas las relaciones necesarias
       const workout = await this.workoutInstanceRepository
         .createQueryBuilder('workoutInstance')
         .leftJoinAndSelect('workoutInstance.workout', 'workout')
@@ -956,11 +957,47 @@ export class WorkoutService {
         .leftJoinAndSelect('exerciseInstance.exercise', 'exercise')
         .leftJoinAndSelect('workoutInstance.trainingSession', 'trainingSession')
         .leftJoinAndSelect('trainingSession.trainingWeek', 'trainingWeek')
+        .leftJoinAndSelect('workoutInstance.trainingCycle', 'trainingCycle')
+        .leftJoinAndSelect('workoutInstance.clientSubscription', 'clientSubscription')
+        .leftJoinAndSelect('clientSubscription.client', 'client')
+        .leftJoinAndSelect('client.user', 'user')
         .where('workoutInstance.id = :workoutId', { workoutId })
-        // .andWhere('exerciseInstance.exerciseId is not NULL')
         .getOne();
-        console.log('WORKOUT: ', workout)
-    return workout;
+  
+      if (!workout) {
+        throw new Error('Workout instance not found');
+      }
+  
+      // Consultar RPE Assignment a nivel de Workout, TrainingCycle y Usuario
+      const workoutRpeAssignment = await this.rpeAssignmentRepository.findOne({
+        where: { targetType: 'workout', targetId: workoutId },
+        relations: ['rpeMethod'],
+      });
+  
+      const trainingCycleRpeAssignment = await this.rpeAssignmentRepository.findOne({
+        where: { targetType: 'trainingCycle', targetId: workout.trainingSession.trainingWeek.trainingCycle.id },
+        relations: ['rpeMethod'],
+      });
+  
+      const userRpeAssignment = await this.rpeAssignmentRepository.findOne({
+        where: { targetType: 'user', targetId: workout.clientSubscription.client.user.id },
+        relations: ['rpeMethod'],
+      });
+  
+      // Asignar el RPE correspondiente según las prioridades
+      let assignedRpe;
+      if (workoutRpeAssignment) {
+        assignedRpe = workoutRpeAssignment.rpeMethod.name;
+      } else if (trainingCycleRpeAssignment) {
+        assignedRpe = trainingCycleRpeAssignment.rpeMethod.name;
+      } else if (userRpeAssignment) {
+        assignedRpe = userRpeAssignment.rpeMethod.name;
+      } else {
+        assignedRpe = 'No RPE assigned';
+      }
+  
+      // Agregar el RPE asignado a la respuesta del workout
+      return { ...workout, assignedRpe };
     } catch (error) {
       throw new HttpException('Error fetching one workout by workout ID', HttpStatus.INTERNAL_SERVER_ERROR);
     }
