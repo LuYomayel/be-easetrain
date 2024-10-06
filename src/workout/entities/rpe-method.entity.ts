@@ -19,8 +19,8 @@ export class RpeMethod {
   @Column({ type: 'float', default: 1 })
   step: number;  // Incremento en cada paso de la escala (e.g., 0.5, 1, etc.)
 
-  @Column({ type: 'jsonb', nullable: true })
-  valuesMeta?: Array<{ value: number; color: string; emoji?: string }>;  // Información extra para cada valor
+  @Column({ type: 'json', nullable: true })
+  valuesMeta?: Array<{ value: number; color: string; emoji?: string }>; // Información extra para cada valor
 
   @ManyToOne(() => User, (user) => user.rpeMethods)
   createdBy: User;
