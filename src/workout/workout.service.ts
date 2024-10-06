@@ -999,7 +999,8 @@ export class WorkoutService {
       // Agregar el RPE asignado a la respuesta del workout
       return { ...workout, assignedRpe };
     } catch (error) {
-      throw new HttpException('Error fetching one workout by workout ID', HttpStatus.INTERNAL_SERVER_ERROR);
+      console.error('Error fetching workout details:', error);
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
