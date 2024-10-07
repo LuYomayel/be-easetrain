@@ -974,20 +974,23 @@ export class WorkoutService {
         relations: ['rpeMethod'],
       });
   
+      console.log('workoutRpeAssignment:', workoutRpeAssignment);
       const trainingCycleRpeAssignment = workout.trainingSession?.trainingWeek?.trainingCycle
         ? await this.rpeAssignmentRepository.findOne({
             where: { targetType: 'trainingCycle', targetId: workout.trainingSession.trainingWeek.trainingCycle.id },
             relations: ['rpeMethod'],
           })
         : null;
-  
+      
+      console.log('trainingCycleRpeAssignment:', trainingCycleRpeAssignment);
       const userRpeAssignment = workout.clientSubscription?.client?.user
         ? await this.rpeAssignmentRepository.findOne({
             where: { targetType: 'user', targetId: workout.clientSubscription.client.user.id },
             relations: ['rpeMethod'],
           })
         : null;
-  
+      console.log('userRpeAssignment:', userRpeAssignment);
+
       // Asignar el RPE correspondiente según las prioridades
       let assignedRpe;
       if (workoutRpeAssignment) {
