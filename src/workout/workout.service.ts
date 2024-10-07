@@ -970,7 +970,7 @@ export class WorkoutService {
   
       // Consultar RPE Assignment a nivel de Workout, TrainingCycle y Usuario
       const workoutRpeAssignment = await this.rpeAssignmentRepository.findOne({
-        where: { targetType: 'workout', targetId: workoutId },
+        where: { targetType: 'workout', targetId: workout.workout.id },
         relations: ['rpeMethod'],
       });
   
