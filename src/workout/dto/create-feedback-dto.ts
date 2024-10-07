@@ -62,7 +62,7 @@ class ExerciseFeedbackDto {
   sets: ExerciseSetDto[];
 
   // @IsString()
-  @IsNotEmpty({ message: 'Must select a RPE'})
+  // @IsNotEmpty({ message: 'Must select a RPE'})
   rating: string;
 
   @IsBoolean({ message: 'Completed must be a boolean value.' })
