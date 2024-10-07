@@ -983,7 +983,7 @@ export class WorkoutService {
       
       const userRpeAssignment = workout.clientSubscription?.client?.user
         ? await this.rpeAssignmentRepository.findOne({
-            where: { targetType: 'user', targetId: workout.clientSubscription.client.user.id },
+            where: { targetType: 'user', targetId: workout.clientSubscription.client.id },
             relations: ['rpeMethod'],
           })
         : null;
