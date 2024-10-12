@@ -28,6 +28,7 @@ import { RpeAssignment } from './entities/rpe-assignment.entity';
 import { RpeMethod } from './entities/rpe-method.entity';
 import { CreateRpeDto } from './entities/create-rpe-dto';
 import { UpdateRpeDto } from './entities/update-rpe-dto';
+import { UpdateExerciseInstanceDto } from './entities/update-exercise-instance.dto';
 @Injectable()
 export class WorkoutService {
   constructor(
@@ -1554,4 +1555,69 @@ async deleteRpeMethod(rpeMethodId: number, userId: number): Promise<void> {
     return await this.rpeAssignmentRepository.find({ where: { targetType, targetId }, relations: ['rpeMethod'] });
   }
 
+  async updateExercises(updateExerciseInstanceDto: UpdateExerciseInstanceDto[]) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      for (const exercise of updateExerciseInstanceDto) {
+        const exerciseInstance = await this.exerciseInstanceRepository.findOne({
+          where: { id: exercise.id },
+          relations: ['group'],
+        });
+
+        if (!exerciseInstance) {
+          throw new HttpException(`Exercise instance with ID ${exercise.id} not found`, HttpStatus.NOT_FOUND);
+        }
+
+        if (exercise.repetitions) {
+          exerciseInstance.repetitions = exercise.repetitions;
+        }
+
+        if (exercise.sets) {
+          exerciseInstance.sets = exercise.sets;
+        }
+
+        if (exercise.time) {
+          exerciseInstance.time = exercise.time;
+        }
+
+        if (exercise.weight) {
+          exerciseInstance.weight = exercise.weight;
+        }
+
+        if (exercise.restInterval) {
+          exerciseInstance.restInterval = exercise.restInterval;
+        }
+
+        if (exercise.tempo) {
+          exerciseInstance.tempo = exercise.tempo;
+        }
+
+        if (exercise.notes) {
+          exerciseInstance.notes = exercise.notes;
+        }
+
+        if (exercise.difficulty) {
+          exerciseInstance.difficulty = exercise.difficulty;
+        }
+
+        if (exercise.duration) {
+          exerciseInstance.duration = exercise.duration;
+        }
+
+        if (exercise.distance) {
+          exerciseInstance.distance = exercise.distance;
+        }
+
+        await queryRunner.manager.save(ExerciseInstance, exerciseInstance);
+      }
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(`Error updating exercises: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    } finally {
+      await queryRunner.release();
+    }
+  }
 }

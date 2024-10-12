@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AssignWorkoutsToCycleDTO, CreateCycleDto } from './entities/create-cycle.dto';
 import { CreateRpeDto } from './entities/create-rpe-dto';
 import { UpdateRpeDto } from './entities/update-rpe-dto';
+import { UpdateExerciseInstanceDto } from './entities/update-exercise-instance.dto';
 
 @Controller('workout')
 export class WorkoutController {
@@ -125,6 +126,10 @@ export class WorkoutController {
     return this.workoutService.submitFeedback(id, createFeedbackDto);
   }
 
+  @Post('/updateExercises')
+  async updateExercises(@Body() updateExercises: UpdateExerciseInstanceDto[]) {
+    return this.workoutService.updateExercises(updateExercises);
+  }
   @Get('/feedback/:sessionId')
   async getFeedback(
     @Param('sessionId') sessionId: number,
