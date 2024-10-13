@@ -1561,62 +1561,24 @@ async deleteRpeMethod(rpeMethodId: number, userId: number): Promise<void> {
     await queryRunner.startTransaction();
     try {
       const updatedExercises = [];
-      for (const exercise of updateExerciseInstanceDto) {
-        const exerciseInstance = await this.exerciseInstanceRepository.findOne({
-          where: { id: exercise.id },
-          relations: ['group'],
-        });
-
-        if (!exerciseInstance) {
-          throw new HttpException(`Exercise instance with ID ${exercise.id} not found`, HttpStatus.NOT_FOUND);
+  
+      for (const exerciseDto of updateExerciseInstanceDto) {
+        const { id, ...fieldsToUpdate } = exerciseDto;
+  
+        // Verificar que al menos hay un campo para actualizar
+        if (Object.keys(fieldsToUpdate).length === 0) {
+          throw new HttpException(`No fields provided to update for exercise with ID ${id}`, HttpStatus.BAD_REQUEST);
         }
-
-        if (exercise.repetitions) {
-          exerciseInstance.repetitions = exercise.repetitions;
-        }
-
-        if (exercise.sets) {
-          exerciseInstance.sets = exercise.sets;
-        }
-
-        if (exercise.time) {
-          exerciseInstance.time = exercise.time;
-        }
-
-        if (exercise.weight) {
-          exerciseInstance.weight = exercise.weight;
-        }
-
-        if (exercise.restInterval) {
-          exerciseInstance.restInterval = exercise.restInterval;
-        }
-
-        if (exercise.tempo) {
-          exerciseInstance.tempo = exercise.tempo;
-        }
-
-        if (exercise.notes) {
-          exerciseInstance.notes = exercise.notes;
-        }
-
-        if (exercise.difficulty) {
-          exerciseInstance.difficulty = exercise.difficulty;
-        }
-
-        if (exercise.duration) {
-          exerciseInstance.duration = exercise.duration;
-        }
-
-        if (exercise.distance) {
-          exerciseInstance.distance = exercise.distance;
-        }
-
-        const result = await queryRunner.manager.update(ExerciseInstance, exerciseInstance.id, exerciseInstance);
-        
+  
+        const result = await queryRunner.manager.update(ExerciseInstance, id, fieldsToUpdate);
+  
         if (result.affected && result.affected > 0) {
-          updatedExercises.push(result);
+          updatedExercises.push({ id, ...fieldsToUpdate });
+        } else {
+          throw new HttpException(`Exercise instance with ID ${id} not found`, HttpStatus.NOT_FOUND);
         }
       }
+  
       await queryRunner.commitTransaction();
       return updatedExercises;
     } catch (error) {
