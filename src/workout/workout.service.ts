@@ -1560,6 +1560,7 @@ async deleteRpeMethod(rpeMethodId: number, userId: number): Promise<void> {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
+      const updatedExercises = [];
       for (const exercise of updateExerciseInstanceDto) {
         const exerciseInstance = await this.exerciseInstanceRepository.findOne({
           where: { id: exercise.id },
@@ -1610,9 +1611,14 @@ async deleteRpeMethod(rpeMethodId: number, userId: number): Promise<void> {
           exerciseInstance.distance = exercise.distance;
         }
 
-        await queryRunner.manager.save(ExerciseInstance, exerciseInstance);
+        const result = await queryRunner.manager.update(ExerciseInstance, exerciseInstance.id, exerciseInstance);
+        
+        if (result.affected && result.affected > 0) {
+          updatedExercises.push(result);
+        }
       }
       await queryRunner.commitTransaction();
+      return updatedExercises;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(`Error updating exercises: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
